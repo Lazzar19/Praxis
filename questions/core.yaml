@@ -1,0 +1,257 @@
+# Core decisions. A session can finish from this file alone.
+# idk and whyRubric are authored for slice 3 and are not walked yet.
+questions:
+  - id: stack
+    area: stack
+    title: Server language
+    prompt: Which language will you write the server in?
+    options:
+      - id: node
+        label: Node.js
+        pros:
+          - One language can cover a browser UI and the server, and examples are easy to find.
+        cons:
+          - Skipping types makes runtime failures easy to miss.
+      - id: python
+        label: Python
+        pros:
+          - The code is direct to read, which helps while the domain is still new.
+        cons:
+          - Packaging and optional types are a second skill on top of the language.
+      - id: go
+        label: Go
+        pros:
+          - The build is one binary, so running it on a server stays simple.
+        cons:
+          - Everyday web tasks take more code, and beginner tutorials are thinner.
+    recommendation:
+      beginner: node
+      intermediate: node
+      advanced: go
+    whyRubric:
+      - names the language they chose
+      - connects that language to this project
+    idk:
+      subquestions:
+        - id: stack-ui
+          prompt: Will a browser UI be part of the first version?
+          options:
+            - id: yes
+              label: Yes
+              note: Node lets the UI and the server share a language.
+            - id: no
+              label: No
+              note: A single server binary is easier to justify.
+        - id: stack-shipped
+          prompt: Have you already shipped a small program in one of these languages?
+          options:
+            - id: yes
+              label: Yes
+              note: Start from the language you can already debug.
+            - id: no
+              label: No
+              note: Node has the shortest path from a tutorial to a running server.
+      explain:
+        explanation: Pick the language you will read every day. Node fits a JavaScript UI. Go ships as one binary. Python is the most direct to read, and its packaging is a second skill.
+        recommend: node
+
+  - id: database
+    area: database
+    title: Database
+    prompt: Where will this project's data live?
+    options:
+      - id: sqlite
+        label: SQLite
+        pros:
+          - The database is one file next to the app, with nothing else to run.
+        cons:
+          - One writer and one machine get tight once more than one server needs the data.
+      - id: postgres
+        label: PostgreSQL
+        pros:
+          - Concurrent writers, relations, and queries are the ordinary case.
+        cons:
+          - You run a separate service and need a migration story from the start.
+      - id: document
+        label: Document store
+        pros:
+          - Records can change shape without a migration for every new field.
+        cons:
+          - Relations and transactions become application code.
+    recommendation:
+      beginner: sqlite
+      intermediate: postgres
+      advanced: postgres
+    whyRubric:
+      - names the database they chose
+      - relates that choice to how the data will be used
+    idk:
+      subquestions:
+        - id: database-relations
+          prompt: Will rows need to point at other rows, such as a user and their notes?
+          options:
+            - id: yes
+              label: Yes
+              note: A relational database matches that shape.
+            - id: no
+              label: No
+              note: A document or a single file can hold independent records.
+        - id: database-operators
+          prompt: Will more than one running server write the data at the same time?
+          options:
+            - id: yes
+              label: Yes
+              note: PostgreSQL is built for concurrent writers.
+            - id: no
+              label: No
+              note: SQLite is enough while one process owns the file.
+      explain:
+        explanation: SQLite is a file you can open and inspect. PostgreSQL is the step up when more than one process writes, or when you want relations without hand-rolled joins. A document store fits records whose shape changes often.
+        recommend: sqlite
+
+  - id: api
+    area: api
+    title: API style
+    prompt: How will clients talk to the server?
+    options:
+      - id: rest
+        label: JSON over HTTP
+        pros:
+          - Each resource has a URL, and a request is easy to send with curl.
+        cons:
+          - A screen that needs several resources may take several round trips.
+      - id: graphql
+        label: GraphQL
+        pros:
+          - The client asks for the shape it needs in one query.
+        cons:
+          - You learn a query layer before the first feature is done.
+    recommendation:
+      beginner: rest
+      intermediate: rest
+      advanced: rest
+    whyRubric:
+      - names the API style they chose
+      - says what a client of this project needs from the server
+    idk:
+      subquestions:
+        - id: api-clients
+          prompt: Who calls the server in the first version?
+          options:
+            - id: one
+              label: One client you also write
+              note: A few JSON routes are enough to see.
+            - id: many
+              label: Several clients with different screens
+              note: A query language pays off when each screen wants a different shape.
+      explain:
+        explanation: JSON over HTTP is a URL plus a verb plus a body. GraphQL adds a query language so each client can pick fields. For a first server, the URL is the easier contract to test.
+        recommend: rest
+
+  - id: auth
+    area: auth
+    title: Authentication
+    prompt: How will people sign in?
+    options:
+      - id: none
+        label: No accounts yet
+        pros:
+          - The first feature ships without password storage or a login screen.
+        cons:
+          - Adding accounts later means threading identity through data you already stored.
+      - id: sessions
+        label: Server sessions
+        pros:
+          - A cookie session is a complete sign-in you can explain end to end.
+        cons:
+          - You own password reset, storage, and the cookie settings.
+      - id: hosted
+        label: Hosted auth
+        pros:
+          - Passwords, reset, and social login are a service you configure.
+        cons:
+          - Sign-in depends on a vendor and on their dashboard staying familiar.
+    recommendation:
+      beginner: sessions
+      intermediate: sessions
+      advanced: hosted
+    whyRubric:
+      - names how people will sign in
+      - says whether this project needs accounts in the first version
+    idk:
+      subquestions:
+        - id: auth-needed
+          prompt: Does the first version need to know who someone is?
+          options:
+            - id: no
+              label: No
+              note: Ship the core feature before accounts.
+            - id: yes
+              label: Yes
+              note: The next question is who stores the password.
+        - id: auth-owner
+          prompt: Do you want to see how a session cookie works?
+          options:
+            - id: yes
+              label: Yes
+              note: Server sessions keep that path in your code.
+            - id: no
+              label: No
+              note: A hosted provider hides passwords and reset.
+      explain:
+        explanation: No accounts is honest when the first version does not need identity. Server sessions teach the cookie and the login you own. Hosted auth moves passwords to a vendor so the project can focus elsewhere.
+        recommend: sessions
+
+  - id: deploy
+    area: deploy
+    title: Deploy target
+    prompt: Where will the running project live?
+    options:
+      - id: local
+        label: This machine only
+        pros:
+          - Nothing to operate, and the feedback loop stays on your laptop.
+        cons:
+          - Nobody else can open the project until a host exists.
+      - id: managed
+        label: Managed host
+        pros:
+          - Push to deploy, with TLS handled by the platform.
+        cons:
+          - Free tiers sleep, and the platform's limits become your limits.
+      - id: container
+        label: Container on a host you run
+        pros:
+          - The same image runs on a laptop and on a server you control.
+        cons:
+          - You own the host, updates, and the network in front of the container.
+    recommendation:
+      beginner: managed
+      intermediate: managed
+      advanced: container
+    whyRubric:
+      - names where the project will run
+      - says who needs to reach it
+    idk:
+      subquestions:
+        - id: deploy-audience
+          prompt: Does someone other than you need to open this in a browser?
+          options:
+            - id: no
+              label: No
+              note: Local is enough until that changes.
+            - id: yes
+              label: Yes
+              note: A managed host is the shorter path to a public URL.
+        - id: deploy-ops
+          prompt: Do you want to operate the machine the process runs on?
+          options:
+            - id: no
+              label: No
+              note: A managed host hides the machine.
+            - id: yes
+              label: Yes
+              note: A container is the unit you can move between machines.
+      explain:
+        explanation: Local keeps the loop on one computer. A managed host turns a push into a URL and takes the machine away. A container is the step where you want the same image everywhere and you accept the host that runs it.
+        recommend: managed
