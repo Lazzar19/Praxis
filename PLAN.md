@@ -1,145 +1,115 @@
-# Learn Coach: plan
+# Learn Coach: implementation plan
 
-A Cursor plugin that keeps the developer in the decision loop. Instead of accepting the agent's defaults,
-the user answers level-aware questions, picks between explained options, and gets a written record of
-every decision (and why) before code is generated.
+A Cursor extension that keeps the student in the decision loop. Before any project code is written, the student answers level-aware questions, picks between explained options, and confirms a short reason. The coach then writes a `DECISIONS.md` the student can reread, and a `PLAN.md` the coding agent must follow.
 
-> How to use this file: every feature lists 2-3 ways to build it. Pick one per feature, write your choice
-> and one-sentence reason under **Decision**, then implement. Order matters: each step builds on the last.
+Decisions below were locked on 2026-11-04. Implement from [Build order](#build-order). The comparison tables that led here are removed on purpose, so the next session builds the chosen path.
+
+Repository name: `learn-coach`. Display name: Learn Coach.
 
 ## Goals
-- The user makes every architecture decision, with enough explanation to make it consciously.
-- Questions adapt to the user's level (beginner / intermediate / advanced) and to "I don't know" answers.
-- The output is a `DECISIONS.md` the user can read later, plus a project plan the coding agent follows.
+- The student makes every architecture decision, with enough explanation to make it consciously.
+- Questions adapt to the student's level (beginner / intermediate / advanced) and to "I don't know" answers.
+- The output in the target project is a `DECISIONS.md`, plus a project plan the coding agent follows.
 
-## Non-goals (for the MVP)
-- No custom model, no fine-tuning. The Cursor agent's own model does the reasoning.
-- No cloud backend or accounts. Everything is local, per project.
-
----
-
-## Feature order
-
-### 1. Plugin shell: how the coach plugs into Cursor
-How the coach gets into the agent's flow.
-
-| Option | How | Why it's good | Trade-off |
-|---|---|---|---|
-| A. Rules / skill only | A `.cursor/rules/*.mdc` file that tells the agent: no code until the decision phase is done; ask questions in a fixed format | Zero code, works today, fastest to try the idea | No persistent state, the agent can drift from the rules, nothing to measure |
-| B. MCP server + rules | Rules start the flow; a local MCP server exposes tools like `start_session`, `next_question`, `record_answer`, `export_decisions` | State lives in code, not in the prompt; the flow is deterministic and testable | You write and run a small server |
-| C. VS Code extension + MCP server | B, plus a webview panel showing questions as cards and a progress map | Best UX, can be published on the Marketplace | Most work; extension API plus webview |
-
-Recommendation: start with **B**. It is the smallest version that is a real, testable program, and C can be added on top later.
-
-**Decision:** _
-
-### 2. MCP server language and runtime
-
-| Option | Why it's good | Trade-off |
-|---|---|---|
-| A. TypeScript + official MCP SDK (`@modelcontextprotocol/sdk`) | First-class SDK, same language as a later VS Code extension, so code can be shared | Needs Node (not installed in WSL yet) |
-| B. Python + `mcp` SDK (FastMCP) | Very little boilerplate; you already know Python | Separate language from the extension if you build C later |
-| C. Go + community MCP SDK | Single static binary, easy to install, good practice for Go | Less mature SDK, fewer examples |
-
-**Decision:** _
-
-### 3. Session state storage
-Stores the user's level, the questions asked, the answers, and the decisions per project.
-
-| Option | Why it's good | Trade-off |
-|---|---|---|
-| A. JSON file in the project (`.learn-coach/session.json`) | Simple, readable, committed with the project | Has no queries; concurrent writes are unsafe (fine for one user) |
-| B. SQLite (`.learn-coach/coach.db`) | Real queries (for example "which concepts have I struggled with?"), can be shared across projects later | Binary file, needs a migration story |
-| C. Markdown only (`DECISIONS.md` is the state) | One source of truth that the human reads | Hard to parse back reliably |
-
-**Decision:** _
-
-### 4. Skill-level calibration (first question)
-
-| Option | How | Why it's good | Trade-off |
-|---|---|---|---|
-| A. Self-rating | "Rate yourself: beginner / intermediate / advanced" per area (backend, DB, deploy...) | Instant, respects the user | People misjudge themselves |
-| B. Short diagnostic | 3-5 quick concept questions per area; the score sets the level | More accurate | Slower start, needs a question bank |
-| C. Self-rating, then adapt | Start from A, and move the level up or down from how answers go (for example many "I don't know" answers lower it) | Accurate over time with a fast start | Slightly more logic |
-
-**Decision:** _
-
-### 5. Question engine: what to ask and in what order
-
-| Option | How | Why it's good | Trade-off |
-|---|---|---|---|
-| A. Static decision tree | Hand-written YAML: stack, then DB, then API style, then auth, then deploy, each with options and explanations | Predictable, high-quality explanations, testable | Rigid; misses project-specific decisions |
-| B. LLM-generated questions | The server asks the agent to propose the next decision and 2-4 options in a fixed JSON schema | Adapts to any project | Quality varies; harder to test |
-| C. Hybrid | A static skeleton of core decisions, where the LLM fills in project-specific options and adds extra questions | Reliable core plus flexibility | Two code paths |
-
-Each question should carry: the options, the pros and cons of each, a recommendation for the user's level, and an "I don't know" path.
-
-**Decision:** _
-
-### 6. "I don't know" handling
-
-| Option | Why it's good | Trade-off |
-|---|---|---|
-| A. Explain and recommend | Short explanation of the concept, then a recommended default the user confirms | Never blocks |
-| B. Socratic sub-questions | Break the decision into simpler questions ("Will data have relations?" before "SQL or NoSQL?") | Real learning | Takes longer |
-| C. Level-dependent | Beginners get B, advanced users get A | Best of both | More branching |
-
-**Decision:** _
-
-### 7. Understanding check
-
-| Option | Why it's good | Trade-off |
-|---|---|---|
-| A. None | Fastest | No proof of learning |
-| B. One "why?" after each decision; the user writes the reason in their own words and it goes into `DECISIONS.md` | Cheap, forces reflection | No grading |
-| C. Short quiz graded by the LLM | Measurable learning | Can feel like school; risk of bad grading |
-
-**Decision:** _
-
-### 8. Output: DECISIONS.md and project plan
-- `DECISIONS.md`: one ADR-style entry per decision with context, options considered, the choice, the user's reason, and the date.
-- `PLAN.md` for the generated project: an ordered feature list the coding agent must follow.
-
-| Option | Why it's good | Trade-off |
-|---|---|---|
-| A. Templates (Handlebars / string templates) | Deterministic, testable | Less natural prose |
-| B. LLM-written from session state | Reads well | Can drift from what was decided |
-
-**Decision:** _
-
-### 9. Scaffolding: from decisions to code
-
-| Option | Why it's good | Trade-off |
-|---|---|---|
-| A. The agent generates everything after decisions | Fast | The user is back to pressing Enter |
-| B. The agent generates the skeleton and leaves marked TODOs (one key function per feature) for the user to write, then reviews them | Real learning by doing | Slower; needs a review flow |
-| C. Configurable "hands-on level" | Users choose how much they write | More settings |
-
-**Decision:** _
-
-### 10. Progressive fading (later)
-Track concepts per user (for example "SQL vs NoSQL: decided 3 times, explained well"). Over time, skip explanations the
-user has already mastered and ask the user to propose options first. This needs feature 3 (option B) to be useful.
-
-**Decision:** _
-
-### 11. UI (optional, after the MVP)
-A VS Code webview panel with question cards, a decision timeline, and a skill map. Publish to the VS Code Marketplace / Open VSX.
-
-**Decision:** _
-
-### 12. Metrics (for the README and CV)
-Count sessions, decisions made, "I don't know" rate over time, and the share of TODOs written by the user. Keep it local and opt-in.
-
-**Decision:** _
+## Non-goals
+- No custom model and no fine-tuning. The Cursor agent's own model does the reasoning.
+- No cloud backend and no accounts. State stays on disk.
+- No multi-question quiz, no decision timeline, no skill map, no metrics, and no marketplace release until the slices below say so.
 
 ---
 
-## Milestones
-1. **M1 (weekend):** features 1-5 as an MVP. A session runs end to end in Cursor and writes `DECISIONS.md`.
-2. **M2:** features 6-9. Adaptive help and hands-on scaffolding.
-3. **M3:** features 10-12. Fading, UI, and metrics, then release to classmates and gather feedback.
+## Locked decisions
 
-## Open questions
-- Should a session be per project, or should the user profile be global (`~/.learn-coach`)?
-- How should the plugin be distributed: a Cursor plugin/marketplace entry, an npm package, or a manual MCP config?
+| # | Topic | Choice | Why |
+|---|---|---|---|
+| 1 | Shell | VS Code extension + local MCP server, plus a rule that blocks project code until export | Question cards sit outside the chat, where accepting the model's default is easiest. Rules and the server work before the panel exists |
+| 2 | Server language | TypeScript, MCP SDK v2 (`@modelcontextprotocol/server`) | Official SDK, and the extension is TypeScript too. The v1 package name was `@modelcontextprotocol/sdk` |
+| 3 | Session storage | JSON file in the target project: `.learn-coach/session.json` | One student, one document: level, questions, answers, decisions. Readable and safe to commit. `DECISIONS.md` is the report generated from this file |
+| 4 | Level | Self-rating per area, then adapt | Fast start. The level moves one step after three answers in the same area, so one reply cannot swing it |
+| 5 | Questions | Hybrid | A hand-written core tree always finishes a session. The model may add project-specific options and extra questions later |
+| 6 | "I don't know" | Depends on level | Beginners get short sub-questions. Advanced students get a short explanation and a recommendation. Both must confirm before it counts as their decision |
+| 7 | Understanding check | One "why?" per decision, checked against the choice | The student's own words become the reason in `DECISIONS.md`. On a mismatch: one hint, one retry, then continue. No separate score and no extra quiz items |
+| 8 | Output | Templates | The file must contain the choice and the reason the student actually gave. Option text lives in YAML; the template assembles the ADR and the agent plan |
+| 9 | Scaffolding | Hands-on level is a setting. Default, and the only mode to build first: skeleton + marked TODOs | The student writes one key function per feature, then the agent reviews it. Full generation stays a later choice for an area they already know |
+| 10 | Fading | Later | A JSON profile is enough when this starts. SQLite waits until cross-project queries need it |
+| 11 | Panel | In scope with the shell, in a small form | Slice 2 shows the current question, its options, and a short progress line. Timeline and skill map wait |
+| 12 | Metrics | Later, local, opt-in | Sessions, decisions, "I don't know" rate, share of TODOs the student wrote. Does not affect the first slices |
+
+### Rules that bind the choices
+
+- **Where files go.** `.learn-coach/session.json`, `DECISIONS.md`, and the generated `PLAN.md` belong to the project being coached. This repository is the coach itself.
+- **Core tree order.** Stack, then database, then API style, then auth, then deploy. Each node has options, pros, cons, a recommendation per level, an "I don't know" path, and a few phrases a sound reason should touch.
+- **Beginner "I don't know" paths are authored** in that same YAML for the core tree. The model does not invent the lesson.
+- **The core tree completes a session** when the model adds nothing.
+- **Level updates.** Three "I don't know" answers in one area lower that area by one step, and beginner is the floor. Three why-checks that pass without a retry raise it by one step, and advanced is the ceiling. Three is the starting threshold.
+- **A recommendation is not a decision** until the student confirms it.
+- **The why-check stores the student's text verbatim.** The model judges fit. It does not rewrite the reason.
+- **Hands-on default** is skeleton plus TODOs. The setting exists in the session from the start; only this mode is implemented in the first scaffolding slice.
+
+### Closed questions
+- A session is per target project. A global profile at `~/.learn-coach` starts only with fading, and it is JSON until a real query workload shows up.
+- During development the extension and MCP server load locally from this repo. Marketplace or Open VSX comes after the panel is worth installing.
+
+---
+
+## What a session does
+
+1. The student rates themselves per area and the hands-on mode is recorded (default: write the TODOs).
+2. The server asks the next core question, with pros, cons, and a level-aware recommendation.
+3. "I don't know" branches as in decision 6, then returns to a confirmable choice.
+4. The student states why, in their own words. One hint and one retry if the reason misses the choice.
+5. The answer is appended to `.learn-coach/session.json`.
+6. After the tree, export writes `DECISIONS.md` (one ADR per decision: context, options, choice, reason, date) and a `PLAN.md` of ordered features for the coding agent.
+7. Only then may the agent scaffold the project. Until the TODO slice, scaffolding is out of scope: export is the end of the session.
+
+MCP tools for this loop: `start_session`, `next_question`, `record_answer`, `export_decisions`. The why-check is part of recording an answer, not a separate product.
+
+---
+
+## Build order
+
+Each slice is done only when its check passes. Do not start a slice early.
+
+### Slice 1 — session writes DECISIONS.md
+TypeScript MCP server, JSON session, static core tree, templates. A Cursor rule tells the agent not to write project code before `export_decisions`.
+
+Done when a session runs in Cursor from the first question through export, the core tree needs no model output, and `DECISIONS.md` matches the choices and reasons in the JSON.
+
+### Slice 2 — one question card
+VS Code extension webview that shows the current question, the options, and a one-line progress indicator. It calls the same server as the chat tools.
+
+Done when a student can answer a question from the card and the JSON session matches an answer given through the tool.
+
+### Slice 3 — level, "I don't know", why-check
+Self-rating at start, the three-answer level rule, authored beginner sub-questions, advanced explain-and-confirm, and the single why-check with one hint.
+
+Done when a beginner "I don't know" walks the YAML sub-questions, an advanced "I don't know" still requires confirmation, and a mismatched reason is stored only after a retry or the second attempt.
+
+### Slice 4 — project-specific options
+The model may add options and extra questions for this project, in a fixed JSON shape. The core tree still runs if that call fails.
+
+Done when a session with model additions and a session with the model disabled both export a coherent `DECISIONS.md`.
+
+### Slice 5 — skeleton and TODOs
+Using the exported plan, the agent scaffolds the project and leaves one marked TODO per feature for the student to write, then reviews it. This is the only hands-on mode.
+
+Done when a fresh export produces a skeleton whose TODOs map to the plan, and a student-written function can be reviewed against the decision that required it.
+
+---
+
+## Later, not in the slices above
+- Progressive fading, backed first by `~/.learn-coach` JSON. SQLite only if cross-project queries outgrow that file.
+- Full code generation as a hands-on choice for a mastered area.
+- Decision timeline and skill map in the panel.
+- Opt-in local metrics.
+- Publishing to the VS Code Marketplace or Open VSX.
+
+## First files when implementation starts
+- `package.json` — MCP server and, from slice 2, the extension
+- `src/server/` — the four tools and the session read/write
+- `questions/core.yaml` — the five core decisions
+- `templates/` — `DECISIONS.md` and the student `PLAN.md`
+- `rules/` — no project code until export
+- `src/extension/` — slice 2 only
+
+Requires Node.js 20 or newer. Run `npm install` and `npm run build` before Cursor starts the server.
