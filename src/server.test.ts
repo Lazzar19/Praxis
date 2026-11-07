@@ -94,4 +94,48 @@ describe("MCP session loop", () => {
       await server.close();
     }
   });
+
+  it("leaves the core tree in place when project questions are refused", async () => {
+    const project = tempProject();
+    const server = createCoachServer({ clock });
+    const client = new Client({ name: "learn-coach-test", version: "0.0.0" });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+
+    try {
+      await client.callTool({
+        name: "start_session",
+        arguments: { projectRoot: project, goal: "Notes API", model: false },
+      });
+      const refused = await client.callTool({
+        name: "add_project_questions",
+        arguments: {
+          projectRoot: project,
+          questions: [{
+            id: "realtime",
+            area: "api",
+            title: "Live updates",
+            prompt: "How should a second tab see a new note?",
+            options: [
+              { id: "poll", label: "Polling", pros: ["One request shape."], cons: ["The other tab waits."] },
+              { id: "socket", label: "WebSocket", pros: ["The other tab updates immediately."], cons: ["The server holds a connection."] },
+            ],
+            recommendation: { beginner: "poll", intermediate: "poll", advanced: "socket" },
+            whyRubric: ["names how the second tab hears about a note"],
+          }],
+        },
+      });
+      assert.equal(refused.isError, true);
+      assert.match(text(refused), /off for this session/);
+      const question = await client.callTool({
+        name: "next_question",
+        arguments: { projectRoot: project },
+      });
+      assert.match(text(question), /Question 1 of 5/);
+    } finally {
+      await client.close();
+      await server.close();
+    }
+  });
 });

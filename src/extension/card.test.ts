@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterEach, describe, it } from "node:test";
 import { applyCardMessage, cardState, parseCardMessage } from "./card.js";
 import { cardDocument } from "./document.js";
-import { recordAnswer, startSession } from "../flow.js";
+import { addProjectQuestions, recordAnswer, startSession } from "../flow.js";
 import { packageRoot } from "../paths.js";
 import { readSession } from "../session.js";
 
@@ -129,6 +129,25 @@ describe("question card", () => {
     assert.equal(stored.kind, "question");
     assert.equal(readSession(project)?.answers[0]?.reason, "Python is still what I want here");
     assert.equal(readSession(project)?.answers[0]?.optionId, "node");
+  });
+
+  it("shows a project option on the current question", () => {
+    const project = tempProject();
+    const deps = { projectRoot: project, clock };
+    startSession(deps, { goal: "Notes API" });
+    addProjectQuestions(deps, {
+      options: [{
+        questionId: "stack",
+        id: "bun",
+        label: "Bun",
+        pros: ["The process starts quickly."],
+        cons: ["Class examples are fewer."],
+      }],
+    });
+    const state = cardState(deps);
+    assert.equal(state.kind, "question");
+    if (state.kind !== "question") return;
+    assert.ok(state.options.some((option) => option.id === "bun" && option.label === "Bun"));
   });
 
   it("escapes question text and refuses the coach repository", () => {

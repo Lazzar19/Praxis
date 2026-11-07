@@ -1,3 +1,4 @@
+import { applyAdditions, mergeAdditions } from "./additions.js";
 import { reasonHint, reasonMatches } from "./check.js";
 import { CoachError } from "./errors.js";
 import { recordCleanPass, recordIdk } from "./level.js";
@@ -31,6 +32,7 @@ export interface StartSessionInput {
   levels?: Partial<Record<AreaId, Level>>;
   handsOn?: HandsOn;
   reset?: boolean;
+  model?: boolean;
 }
 
 export interface StartSessionResult {
@@ -41,6 +43,7 @@ export interface StartSessionResult {
   exported: boolean;
   handsOn: HandsOn;
   levels: Record<AreaId, Level>;
+  modelEnabled: boolean;
 }
 
 export interface QuestionView {
@@ -119,7 +122,7 @@ export function startSession(options: FlowOptions, input: StartSessionInput): St
   const flow = resolveFlow(options);
   const existing = readSession(flow.projectRoot, flow.coachRoot);
   if (existing && !input.reset) {
-    return sessionStatus("exists", existing, flow.tree.length);
+    return sessionStatus("exists", existing, sessionTree(flow, existing).length);
   }
 
   const goal = input.goal.trim();
@@ -137,6 +140,7 @@ export function startSession(options: FlowOptions, input: StartSessionInput): St
     startedAt: now,
     exportedAt: null,
     ...sessionTracking(),
+    modelEnabled: input.model ?? true,
   };
   writeSession(flow.projectRoot, session, flow.coachRoot);
   return sessionStatus("created", session, flow.tree.length);
@@ -147,22 +151,23 @@ export type NextView = QuestionView | SubquestionView | ExplainView | ReadyView;
 export function nextQuestion(options: FlowOptions): NextView {
   const flow = resolveFlow(options);
   const session = requireSession(flow);
-  const current = currentQuestion(session, flow.tree);
+  const tree = sessionTree(flow, session);
+  const current = currentQuestion(session, tree);
   if (!current) {
     return {
       status: "ready",
-      total: flow.tree.length,
+      total: tree.length,
       answered: session.answers.length,
       exported: session.exportedAt !== null,
     };
   }
 
-  const subquestion = subquestionView(session, current, flow.tree.length);
+  const subquestion = subquestionView(session, current, tree.length);
   if (subquestion) return subquestion;
   if (session.explainQuestionId === current.question.id) {
-    return explainView(session, current, flow.tree.length);
+    return explainView(session, current, tree.length);
   }
-  return questionView(session, current, flow.tree.length);
+  return questionView(session, current, tree.length);
 }
 
 export function recordAnswer(
@@ -171,11 +176,12 @@ export function recordAnswer(
 ): RecordResult {
   const flow = resolveFlow(options);
   const session = requireSession(flow);
+  const tree = sessionTree(flow, session);
   if (session.exportedAt) {
     throw new CoachError("This session is already exported. Start again with reset true to change a decision.");
   }
 
-  const current = currentQuestion(session, flow.tree);
+  const current = currentQuestion(session, tree);
   if (!current) {
     throw new CoachError("Every core question already has an answer.");
   }
@@ -235,19 +241,50 @@ export function recordAnswer(
     questionId: answer.questionId,
     optionId: answer.optionId,
     reason: answer.reason,
-    remaining: flow.tree.length - updated.answers.length,
+    remaining: tree.length - updated.answers.length,
   };
 }
 
 export function exportDecisions(options: FlowOptions): ExportResult {
   const flow = resolveFlow(options);
   const session = requireSession(flow);
-  assertComplete(session, flow.tree);
-  const rendered = renderExport(session, flow.tree);
+  const tree = sessionTree(flow, session);
+  assertComplete(session, tree);
+  const rendered = renderExport(session, tree);
   const paths = writeExport(flow.projectRoot, rendered);
   const exportedAt = flow.clock().toISOString();
   writeSession(flow.projectRoot, { ...session, exportedAt }, flow.coachRoot);
-  return { ...paths, decisionCount: flow.tree.length };
+  return { ...paths, decisionCount: tree.length };
+}
+
+export interface AdditionsResult {
+  addedOptions: number;
+  addedQuestions: number;
+  total: number;
+}
+
+export function addProjectQuestions(options: FlowOptions, input: unknown): AdditionsResult {
+  const flow = resolveFlow(options);
+  const session = requireSession(flow);
+  if (!session.modelEnabled) {
+    throw new CoachError("Project-specific questions are off for this session. The core tree still runs.");
+  }
+  if (session.exportedAt) {
+    throw new CoachError("This session is already exported. Start again with reset true to change a decision.");
+  }
+  const before = session.additions;
+  const additions = mergeAdditions(
+    flow.tree,
+    before,
+    input,
+    new Set(session.answers.map((answer) => answer.questionId)),
+  );
+  writeSession(flow.projectRoot, { ...session, additions }, flow.coachRoot);
+  return {
+    addedOptions: additions.options.length - before.options.length,
+    addedQuestions: additions.questions.length - before.questions.length,
+    total: sessionTree(flow, { ...session, additions }).length,
+  };
 }
 
 export function formatNext(view: NextView): string {
@@ -289,6 +326,10 @@ export function formatReady(view: ReadyView): string {
     return `All ${view.total} core decisions are recorded and already exported.`;
   }
   return `All ${view.total} core decisions are recorded. Call export_decisions to write DECISIONS.md and PLAN.md.`;
+}
+
+export function formatAdditions(result: AdditionsResult): string {
+  return `Added ${result.addedOptions} option(s) and ${result.addedQuestions} question(s). The session now has ${result.total} questions.`;
 }
 
 export function formatStart(result: StartSessionResult): string {
@@ -364,13 +405,17 @@ function questionView(session: Session, current: { question: Question; index: nu
   };
 }
 
+function explainRecommendation(question: Question, level: Level): { optionId: string; label: string } {
+  const optionId = question.idk.subquestions.length === 0
+    ? question.recommendation[level]
+    : question.idk.explain.recommend;
+  const option = question.options.find((item) => item.id === optionId);
+  if (!option) throw new CoachError(`Question "${question.id}" explains an unknown option.`);
+  return { optionId: option.id, label: option.label };
+}
+
 function explainView(session: Session, current: { question: Question; index: number }, total: number): ExplainView {
   const level = session.levels[current.question.area];
-  const recommendedId = current.question.idk.explain.recommend;
-  const recommended = current.question.options.find((option) => option.id === recommendedId);
-  if (!recommended) {
-    throw new CoachError(`Question "${current.question.id}" explains an unknown option.`);
-  }
   const pending = session.pending?.questionId === current.question.id ? session.pending : undefined;
   return {
     status: "explain",
@@ -380,7 +425,7 @@ function explainView(session: Session, current: { question: Question; index: num
     title: current.question.title,
     explanation: current.question.idk.explain.explanation,
     level,
-    recommendation: { optionId: recommended.id, label: recommended.label },
+    recommendation: explainRecommendation(current.question, level),
     options: current.question.options,
     hint: pending?.hint,
     draft: pending?.draft,
@@ -410,7 +455,7 @@ function beginIdk(flow: ResolvedFlow, session: Session, question: Question): Rec
     ...recordIdk(session, question.area, question.id),
     pending: null,
   };
-  if (level === "beginner") {
+  if (level === "beginner" && question.idk.subquestions.length > 0) {
     writeSession(flow.projectRoot, {
       ...updated,
       idk: { questionId: question.id, step: 0 },
@@ -427,8 +472,7 @@ function beginIdk(flow: ResolvedFlow, session: Session, question: Question): Rec
     };
   }
 
-  const recommended = question.options.find((option) => option.id === question.idk.explain.recommend);
-  if (!recommended) throw new CoachError(`Question "${question.id}" explains an unknown option.`);
+  const recommendation = explainRecommendation(question, level);
   writeSession(flow.projectRoot, {
     ...updated,
     idk: null,
@@ -438,7 +482,7 @@ function beginIdk(flow: ResolvedFlow, session: Session, question: Question): Rec
     status: "explain",
     questionId: question.id,
     explanation: question.idk.explain.explanation,
-    recommendation: { optionId: recommended.id, label: recommended.label },
+    recommendation,
   };
 }
 
@@ -511,6 +555,10 @@ function normalizeLevels(input: Partial<Record<AreaId, Level>> | undefined): Rec
   return levels;
 }
 
+function sessionTree(flow: ResolvedFlow, session: Session): readonly Question[] {
+  return applyAdditions(flow.tree, session.additions);
+}
+
 function sessionStatus(status: "created" | "exists", session: Session, total: number): StartSessionResult {
   return {
     status,
@@ -520,5 +568,6 @@ function sessionStatus(status: "created" | "exists", session: Session, total: nu
     exported: session.exportedAt !== null,
     handsOn: session.handsOn,
     levels: session.levels,
+    modelEnabled: session.modelEnabled,
   };
 }

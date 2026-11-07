@@ -3,7 +3,8 @@ import path from "node:path";
 import * as z from "zod/v4";
 import { CoachError } from "./errors.js";
 import { packageRoot } from "./paths.js";
-import { blankLevelCounts, HANDS_ON, LEVELS, type Session } from "./types.js";
+import { additionsSchema } from "./additions.js";
+import { blankLevelCounts, emptyAdditions, HANDS_ON, LEVELS, type Session } from "./types.js";
 
 const countsSchema = z.strictObject({
   idk: z.number().int().nonnegative(),
@@ -49,6 +50,8 @@ const sessionSchema = z.strictObject({
   }).nullable().optional(),
   idkSeen: z.array(z.string()).optional(),
   explainQuestionId: z.string().nullable().optional(),
+  modelEnabled: z.boolean().optional(),
+  additions: additionsSchema.optional(),
 });
 
 export function resolveProjectRoot(projectRoot: string, coachRoot = packageRoot()): string {
@@ -100,6 +103,8 @@ export function readSession(projectRoot: string, coachRoot = packageRoot()): Ses
     idk: parsed.data.idk ?? null,
     idkSeen: parsed.data.idkSeen ?? [],
     explainQuestionId: parsed.data.explainQuestionId ?? null,
+    modelEnabled: parsed.data.modelEnabled ?? true,
+    additions: parsed.data.additions ?? emptyAdditions(),
   };
 }
 

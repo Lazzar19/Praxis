@@ -73,6 +73,27 @@ export interface IdkCursor {
   step: number;
 }
 
+export interface AddedOption {
+  questionId: string;
+  option: Option;
+}
+
+/** A project question has no authored lesson. The flow explains it, then waits for confirmation. */
+export interface AddedQuestion {
+  id: string;
+  area: AreaId;
+  title: string;
+  prompt: string;
+  options: Option[];
+  recommendation: Record<Level, string>;
+  whyRubric: string[];
+}
+
+export interface ProjectAdditions {
+  options: AddedOption[];
+  questions: AddedQuestion[];
+}
+
 export interface Session {
   version: 1;
   goal: string;
@@ -86,6 +107,8 @@ export interface Session {
   idk: IdkCursor | null;
   idkSeen: string[];
   explainQuestionId: string | null;
+  modelEnabled: boolean;
+  additions: ProjectAdditions;
 }
 
 export function blankLevelCounts(): Record<AreaId, LevelCounts> {
@@ -98,12 +121,18 @@ export function blankLevelCounts(): Record<AreaId, LevelCounts> {
   };
 }
 
-export function sessionTracking(): Pick<Session, "levelCounts" | "pending" | "idk" | "idkSeen" | "explainQuestionId"> {
+export function emptyAdditions(): ProjectAdditions {
+  return { options: [], questions: [] };
+}
+
+export function sessionTracking(): Pick<Session, "levelCounts" | "pending" | "idk" | "idkSeen" | "explainQuestionId" | "modelEnabled" | "additions"> {
   return {
     levelCounts: blankLevelCounts(),
     pending: null,
     idk: null,
     idkSeen: [],
     explainQuestionId: null,
+    modelEnabled: true,
+    additions: emptyAdditions(),
   };
 }

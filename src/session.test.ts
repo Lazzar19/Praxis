@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, it } from "node:test";
@@ -45,6 +45,19 @@ describe("session store", () => {
     writeSession(project, session);
     assert.deepEqual(readSession(project), session);
     assert.equal(sessionFile(project), path.join(project, ".learn-coach", "session.json"));
+  });
+
+  it("fills project additions when an older session omits them", () => {
+    const project = tempProject();
+    writeSession(project, session);
+    const file = sessionFile(project);
+    const stored = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
+    delete stored.modelEnabled;
+    delete stored.additions;
+    writeFileSync(file, JSON.stringify(stored));
+    const read = readSession(project);
+    assert.equal(read?.modelEnabled, true);
+    assert.deepEqual(read?.additions, { options: [], questions: [] });
   });
 
   it("returns null when the project has no session", () => {
