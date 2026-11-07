@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { formatDecisionDate, renderExport } from "./render.js";
 import { fillTemplate } from "./template.js";
 import { loadCoreTree } from "./tree.js";
-import type { Session } from "./types.js";
+import { sessionTracking, type Session } from "./types.js";
 
 const reason = "The UI is JavaScript, so {{goal}} stays one language.";
 
@@ -36,6 +36,7 @@ describe("templates", () => {
       ],
       startedAt: answeredAt,
       exportedAt: null,
+      ...sessionTracking(),
     };
 
     const rendered = renderExport(session, tree);

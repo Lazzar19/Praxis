@@ -3,7 +3,12 @@ import path from "node:path";
 import * as z from "zod/v4";
 import { CoachError } from "./errors.js";
 import { packageRoot } from "./paths.js";
-import { AREAS, HANDS_ON, LEVELS, type Session } from "./types.js";
+import { blankLevelCounts, HANDS_ON, LEVELS, type Session } from "./types.js";
+
+const countsSchema = z.strictObject({
+  idk: z.number().int().nonnegative(),
+  cleanPasses: z.number().int().nonnegative(),
+});
 
 const sessionSchema = z.strictObject({
   version: z.literal(1),
@@ -17,13 +22,33 @@ const sessionSchema = z.strictObject({
   }),
   handsOn: z.enum(HANDS_ON),
   answers: z.array(z.strictObject({
-    questionId: z.enum(AREAS),
+    questionId: z.string().min(1),
     optionId: z.string().min(1),
     reason: z.string().min(1),
     answeredAt: z.iso.datetime(),
   })),
   startedAt: z.iso.datetime(),
   exportedAt: z.iso.datetime().nullable(),
+  levelCounts: z.strictObject({
+    stack: countsSchema,
+    database: countsSchema,
+    api: countsSchema,
+    auth: countsSchema,
+    deploy: countsSchema,
+  }).optional(),
+  pending: z.strictObject({
+    questionId: z.string().min(1),
+    optionId: z.string().min(1),
+    attempts: z.number().int().positive(),
+    hint: z.string().min(1),
+    draft: z.string(),
+  }).nullable().optional(),
+  idk: z.strictObject({
+    questionId: z.string().min(1),
+    step: z.number().int().nonnegative(),
+  }).nullable().optional(),
+  idkSeen: z.array(z.string()).optional(),
+  explainQuestionId: z.string().nullable().optional(),
 });
 
 export function resolveProjectRoot(projectRoot: string, coachRoot = packageRoot()): string {
@@ -68,7 +93,14 @@ export function readSession(projectRoot: string, coachRoot = packageRoot()): Ses
   if (!parsed.success) {
     throw new CoachError(`Session file is invalid: ${z.prettifyError(parsed.error)}`);
   }
-  return parsed.data;
+  return {
+    ...parsed.data,
+    levelCounts: parsed.data.levelCounts ?? blankLevelCounts(),
+    pending: parsed.data.pending ?? null,
+    idk: parsed.data.idk ?? null,
+    idkSeen: parsed.data.idkSeen ?? [],
+    explainQuestionId: parsed.data.explainQuestionId ?? null,
+  };
 }
 
 export function writeSession(projectRoot: string, session: Session, coachRoot = packageRoot()): void {

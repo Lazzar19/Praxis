@@ -1,5 +1,5 @@
 # Core decisions. A session can finish from this file alone.
-# idk and whyRubric are authored for slice 3 and are not walked yet.
+# Beginners walk idk.subquestions. Intermediate and advanced read idk.explain, then confirm.
 questions:
   - id: stack
     area: stack

@@ -5,8 +5,7 @@ import { CoachError } from "./errors.js";
 import {
   exportDecisions,
   formatExport,
-  formatQuestion,
-  formatReady,
+  formatNext,
   formatRecord,
   formatStart,
   nextQuestion,
@@ -15,7 +14,7 @@ import {
 } from "./flow.js";
 import { packageRoot } from "./paths.js";
 import type { Clock, Question } from "./types.js";
-import { AREAS, HANDS_ON, LEVELS } from "./types.js";
+import { HANDS_ON, LEVELS } from "./types.js";
 
 const levelSchema = z.enum(LEVELS);
 const levelsSchema = z.strictObject({
@@ -49,7 +48,7 @@ export function createCoachServer(options: CoachServerOptions = {}): McpServer {
     "start_session",
     {
       title: "Start session",
-      description: "Start a Learn Coach session in a student project. Writes .learn-coach/session.json only. Pass reset true to replace an existing session. The default level is intermediate, and the default hands-on mode is todos.",
+      description: "Start a Learn Coach session in a student project. Writes .learn-coach/session.json only. Ask the student to rate themselves beginner, intermediate, or advanced for stack, database, api, auth, and deploy, and pass those levels. Omitted areas stay intermediate. Pass reset true to replace an existing session.",
       inputSchema: projectRootSchema.extend({
         goal: z.string().min(1).describe("What the student is building."),
         levels: levelsSchema.optional().describe("Self-rating per area. Omitted areas stay intermediate."),
@@ -67,12 +66,12 @@ export function createCoachServer(options: CoachServerOptions = {}): McpServer {
     "next_question",
     {
       title: "Next question",
-      description: "Return the next unanswered core decision, including pros, cons, and the recommendation for the student's level. The recommendation is not a decision until record_answer stores the student's own choice. If the student does not know, they still pick the closest option and say why. Call export_decisions when status is ready.",
+      description: "Return the next unanswered core decision, including pros, cons, and the recommendation for the student's level. The recommendation is not stored until record_answer. If the student does not know, record optionId idk: beginners then get authored sub-questions, and intermediate or advanced students get an explanation they must confirm. Call export_decisions when status is ready.",
       inputSchema: projectRootSchema,
     },
     async ({ projectRoot }) => guard(() => {
       const result = nextQuestion(flowOptions(projectRoot));
-      const text = result.status === "question" ? formatQuestion(result) : formatReady(result);
+      const text = formatNext(result);
       return { text, data: result };
     }),
   );
@@ -81,11 +80,11 @@ export function createCoachServer(options: CoachServerOptions = {}): McpServer {
     "record_answer",
     {
       title: "Record answer",
-      description: "Store the student's choice and their reason for the current core question. The reason is saved verbatim and is not graded in this version. questionId must be the question next_question just returned.",
+      description: "Store the student's choice and their own reason for the current question. questionId must be the question next_question just returned. optionId idk starts the I-don't-know branch and does not store a decision. A reason that names a different option is not stored; the tool returns one hint, and the next reason is stored word for word.",
       inputSchema: projectRootSchema.extend({
-        questionId: z.enum(AREAS),
+        questionId: z.string().min(1),
         optionId: z.string().min(1),
-        reason: z.string().min(1).describe("The student's own words. Stored verbatim."),
+        reason: z.string().describe("The student's own words. Required except for optionId idk and sub-question answers."),
       }),
     },
     async ({ projectRoot, questionId, optionId, reason }) => guard(() => {

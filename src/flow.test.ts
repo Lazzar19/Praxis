@@ -7,6 +7,8 @@ import { CoachError } from "./errors.js";
 import { exportDecisions, nextQuestion, recordAnswer, startSession } from "./flow.js";
 import { packageRoot } from "./paths.js";
 import { readSession } from "./session.js";
+import { loadCoreTree } from "./tree.js";
+import type { Question } from "./types.js";
 
 const directories: string[] = [];
 const clock = () => new Date("2026-11-04T15:00:00.000Z");
@@ -30,6 +32,12 @@ afterEach(() => {
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+function stackVariant(id: string): Question {
+  const base = loadCoreTree()[0];
+  if (!base) throw new Error("missing stack question");
+  return { ...base, id };
+}
 
 describe("session flow", () => {
   it("walks the core tree and writes the student's words", () => {
@@ -78,6 +86,101 @@ describe("session flow", () => {
     assert.ok(decisions.includes("- **Choice:** SQLite (`sqlite`)"));
     assert.equal(startSession(options, { goal: "Other" }).status, "exists");
     assert.equal(readSession(project)?.goal, "Notes API");
+  });
+
+  it("walks beginner sub-questions and still requires a confirmed choice", () => {
+    const project = tempProject();
+    const options = { projectRoot: project, clock };
+    startSession(options, { goal: "Notes API", levels: { stack: "beginner" } });
+    const first = recordAnswer(options, { questionId: "stack", optionId: "idk", reason: "" });
+    assert.equal(first.status, "subquestion");
+    if (first.status !== "subquestion") return;
+    assert.match(first.prompt, /browser UI/);
+    assert.equal(readSession(project)?.answers.length, 0);
+
+    recordAnswer(options, { questionId: "stack", optionId: "yes", reason: "" });
+    const second = nextQuestion(options);
+    assert.equal(second.status, "subquestion");
+    if (second.status !== "subquestion") return;
+    assert.match(second.prompt, /shipped/);
+
+    recordAnswer(options, { questionId: "stack", optionId: "no", reason: "" });
+    const back = nextQuestion(options);
+    assert.equal(back.status, "question");
+    const reason = "Node.js matches the JavaScript UI in this project.";
+    const recorded = recordAnswer(options, { questionId: "stack", optionId: "node", reason });
+    assert.equal(recorded.status, "recorded");
+    assert.equal(readSession(project)?.answers[0]?.reason, reason);
+  });
+
+  it("requires an advanced student to confirm after an explanation", () => {
+    const project = tempProject();
+    const options = { projectRoot: project, clock };
+    startSession(options, { goal: "Notes API", levels: { stack: "advanced" } });
+    const explained = recordAnswer(options, { questionId: "stack", optionId: "idk", reason: "" });
+    assert.equal(explained.status, "explain");
+    if (explained.status !== "explain") return;
+    assert.match(explained.explanation, /one binary/);
+    assert.equal(readSession(project)?.answers.length, 0);
+    assert.equal(nextQuestion(options).status, "explain");
+
+    const reason = "Go gives this project one binary to run.";
+    const recorded = recordAnswer(options, { questionId: "stack", optionId: "go", reason });
+    assert.equal(recorded.status, "recorded");
+    assert.equal(readSession(project)?.answers[0]?.optionId, "go");
+    assert.equal(readSession(project)?.answers[0]?.reason, reason);
+  });
+
+  it("stores a mismatched reason only on the second try", () => {
+    const project = tempProject();
+    const options = { projectRoot: project, clock };
+    startSession(options, { goal: "Notes API" });
+    const first = recordAnswer(options, {
+      questionId: "stack",
+      optionId: "node",
+      reason: "Python is easier to read for this class",
+    });
+    assert.equal(first.status, "hint");
+    if (first.status !== "hint") return;
+    assert.match(first.hint, /names the language they chose/);
+    assert.equal(readSession(project)?.answers.length, 0);
+
+    const reason = "Python is still what I want here";
+    const second = recordAnswer(options, { questionId: "stack", optionId: "node", reason });
+    assert.equal(second.status, "recorded");
+    assert.equal(readSession(project)?.answers[0]?.reason, reason);
+  });
+
+  it("moves a level one step after three answers in the same area", () => {
+    const project = tempProject();
+    const tree = [stackVariant("stack-a"), stackVariant("stack-b"), stackVariant("stack-c")];
+    const options = { projectRoot: project, clock, tree };
+    startSession(options, { goal: "Notes API" });
+    const passes = tempProject();
+    const passOptions = { projectRoot: passes, clock, tree };
+    startSession(passOptions, { goal: "Notes API" });
+
+    for (const question of tree) {
+      recordAnswer(passOptions, {
+        questionId: question.id,
+        optionId: "node",
+        reason: "Node.js fits this class project",
+      });
+    }
+    assert.equal(readSession(passes)?.levels.stack, "advanced");
+
+    for (const question of tree) {
+      recordAnswer(options, { questionId: question.id, optionId: "idk", reason: "" });
+      assert.equal(nextQuestion(options).status, "explain");
+      if (question.id === "stack-c") {
+        assert.equal(readSession(project)?.levels.stack, "beginner");
+      }
+      recordAnswer(options, {
+        questionId: question.id,
+        optionId: "node",
+        reason: "Node.js fits this class project",
+      });
+    }
   });
 
   it("does not export a partial session or write into the coach repo", () => {

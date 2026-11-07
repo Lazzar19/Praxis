@@ -6,7 +6,7 @@ import { afterEach, describe, it } from "node:test";
 import { CoachError } from "./errors.js";
 import { packageRoot } from "./paths.js";
 import { readSession, resolveProjectRoot, sessionFile, writeSession } from "./session.js";
-import type { Session } from "./types.js";
+import { sessionTracking, type Session } from "./types.js";
 
 const directories: string[] = [];
 
@@ -30,6 +30,7 @@ const session: Session = {
   answers: [],
   startedAt: "2026-11-04T15:00:00.000Z",
   exportedAt: null,
+  ...sessionTracking(),
 };
 
 afterEach(() => {
