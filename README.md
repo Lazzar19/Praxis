@@ -2,7 +2,7 @@
 
 A Cursor plugin that keeps you in the decision loop while building a project: level-aware questions, explained options, and a written record of every architecture decision.
 
-Status: slice 4. The model may add project options and questions. The five core decisions still export if that call is off or invalid. See [PLAN.md](PLAN.md).
+Status: slice 5. After export, one stub function is written per decision. The student writes it, and the review cites the decision that required it. See [PLAN.md](PLAN.md).
 
 ## Run
 
@@ -33,5 +33,7 @@ Call the tools against the student project, not this repository:
 3. `next_question`
 4. `record_answer` with the student's option and their own reason
 5. `export_decisions`
+6. `scaffold_todos`
+7. The student writes the marked function. `review_todo` with that question id. Do not fill the TODO in for them.
 
-The session is stored at `.learn-coach/session.json` inside the student project. Export writes `DECISIONS.md` and `PLAN.md` there. The core tree does not need a model. Project questions are asked after the five core decisions, and a beginner confirms them instead of walking a generated lesson.
+The session is stored at `.learn-coach/session.json` inside the student project. Export writes `DECISIONS.md` and `PLAN.md` there. The core tree does not need a model. Project questions are asked after the five core decisions, and a beginner confirms them instead of walking a generated lesson. `scaffold_todos` follows the stack choice for the file language. Full generation is refused.
