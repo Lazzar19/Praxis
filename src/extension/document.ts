@@ -1,3 +1,4 @@
+import { AREAS, LEVELS } from "../types.js";
 import type { CardState } from "./card.js";
 
 export function cardDocument(state: CardState, nonce: string): string {
@@ -21,7 +22,7 @@ export function cardDocument(state: CardState, nonce: string): string {
     .progress { margin: 0 0 12px; opacity: 0.8; }
     h1 { margin: 0 0 8px; font-size: 1.4rem; font-weight: 600; }
     .prompt, .suggestion, .ready { margin: 0 0 16px; }
-    .error { margin: 0 0 16px; color: var(--vscode-errorForeground); }
+    .error, .hint { margin: 0 0 16px; color: var(--vscode-errorForeground); }
     form { display: grid; gap: 12px; max-width: 640px; }
     fieldset { margin: 0; padding: 0; border: 0; display: grid; gap: 8px; }
     legend { margin-bottom: 4px; }
@@ -63,18 +64,26 @@ export function cardDocument(state: CardState, nonce: string): string {
 <body>
   <p class="progress">${escapeHtml(state.progress)}</p>
   ${state.error ? `<p class="error">${escapeHtml(state.error)}</p>` : ""}
+  ${"hint" in state && state.hint ? `<p class="hint">${escapeHtml(state.hint)}</p>` : ""}
   ${renderBody(state)}
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
     document.getElementById("card-form")?.addEventListener("submit", (event) => {
       event.preventDefault();
       const form = new FormData(event.currentTarget);
+      const submitter = event.submitter;
+      const submitted = submitter && submitter.dataset.type ? submitter.dataset.type : String(form.get("type") ?? "");
+      const levels = {};
+      for (const area of ["stack", "database", "api", "auth", "deploy"]) {
+        levels[area] = String(form.get("level-" + area) ?? "");
+      }
       vscode.postMessage({
-        type: String(form.get("type") ?? ""),
+        type: submitted,
         goal: String(form.get("goal") ?? ""),
         questionId: String(form.get("questionId") ?? ""),
         optionId: String(form.get("optionId") ?? ""),
         reason: String(form.get("reason") ?? ""),
+        levels,
       });
     });
   </script>
@@ -85,13 +94,41 @@ export function cardDocument(state: CardState, nonce: string): string {
 
 function renderBody(state: CardState): string {
   if (state.kind === "start") {
+    const levels = AREAS.map((area) => {
+      const options = LEVELS.map((level) => {
+        const selected = state.levels[area] === level ? " selected" : "";
+        return `<option value="${level}"${selected}>${level}</option>`;
+      }).join("");
+      return `<label class="field">${area}
+        <select name="level-${area}">${options}</select>
+      </label>`;
+    }).join("");
     return `<form id="card-form">
       <input type="hidden" name="type" value="start">
       <label class="field">What are you building?
         <input type="text" name="goal" value="${escapeHtml(state.goal)}" required>
       </label>
+      ${levels}
       <button type="submit">Start</button>
     </form>`;
+  }
+
+  if (state.kind === "subquestion") {
+    const options = state.options.map((option) => `<label class="option">
+      <input type="radio" name="optionId" value="${escapeHtml(option.id)}" required>
+      <span class="option-label">${escapeHtml(option.label)}</span>
+      <span class="meta">${escapeHtml(option.note)}</span>
+    </label>`).join("");
+    return `<p class="prompt">${escapeHtml(state.prompt)}</p>
+      <form id="card-form">
+        <input type="hidden" name="type" value="answer">
+        <input type="hidden" name="questionId" value="${escapeHtml(state.questionId)}">
+        <fieldset>
+          <legend>A smaller question</legend>
+          ${options}
+        </fieldset>
+        <button type="submit">Continue</button>
+      </form>`;
   }
 
   if (state.kind === "ready") {
@@ -107,7 +144,33 @@ function renderBody(state: CardState): string {
     return `<p class="ready">${escapeHtml(note)}</p>${button}`;
   }
 
-  const options = state.options.map((option) => {
+  const lead = state.kind === "explain"
+    ? `<p class="prompt">${escapeHtml(state.explanation)}</p>`
+    : `<p class="prompt">${escapeHtml(state.prompt)}</p>`;
+  const idk = state.kind === "question"
+    ? `<button type="submit" data-type="idk" formnovalidate>I don't know</button>`
+    : "";
+
+  return `<h1>${escapeHtml(state.title)}</h1>
+    ${lead}
+    <p class="suggestion">${escapeHtml(state.suggestion)}</p>
+    <form id="card-form">
+      <input type="hidden" name="type" value="answer">
+      <input type="hidden" name="questionId" value="${escapeHtml(state.questionId)}">
+      <fieldset>
+        <legend>Options</legend>
+        ${choiceOptions(state)}
+      </fieldset>
+      <label class="field">Why this choice?
+        <textarea name="reason" required>${escapeHtml(state.reason)}</textarea>
+      </label>
+      <button type="submit">Record answer</button>
+      ${idk}
+    </form>`;
+}
+
+function choiceOptions(state: Extract<CardState, { kind: "question" | "explain" }>): string {
+  return state.options.map((option) => {
     const checked = option.id === state.selectedOptionId ? " checked" : "";
     const suggested = option.suggested ? " suggested" : "";
     return `<label class="option${suggested}">
@@ -117,22 +180,6 @@ function renderBody(state: CardState): string {
       <span class="meta">Cons: ${escapeHtml(option.cons)}</span>
     </label>`;
   }).join("");
-
-  return `<h1>${escapeHtml(state.title)}</h1>
-    <p class="prompt">${escapeHtml(state.prompt)}</p>
-    <p class="suggestion">${escapeHtml(state.suggestion)}</p>
-    <form id="card-form">
-      <input type="hidden" name="type" value="answer">
-      <input type="hidden" name="questionId" value="${escapeHtml(state.questionId)}">
-      <fieldset>
-        <legend>Options</legend>
-        ${options}
-      </fieldset>
-      <label class="field">Why this choice?
-        <textarea name="reason" required>${escapeHtml(state.reason)}</textarea>
-      </label>
-      <button type="submit">Record answer</button>
-    </form>`;
 }
 
 export function escapeHtml(value: string): string {

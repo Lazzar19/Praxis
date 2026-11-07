@@ -79,6 +79,58 @@ describe("question card", () => {
     assert.match(html, /reason is required/);
   });
 
+  it("keeps a self-rating and walks I don't know on the card", () => {
+    const project = tempProject();
+    const deps = { projectRoot: project, clock };
+    const started = applyCardMessage(deps, {
+      type: "start",
+      goal: "Notes API",
+      levels: { stack: "beginner", database: "advanced" },
+    });
+    assert.equal(started.kind, "question");
+    assert.equal(readSession(project)?.levels.stack, "beginner");
+    assert.equal(readSession(project)?.levels.database, "advanced");
+    assert.equal(readSession(project)?.levels.api, "intermediate");
+    if (started.kind !== "question") return;
+    const html = cardDocument(started, "nonce");
+    assert.match(html, /data-type="idk"/);
+
+    const step = applyCardMessage(deps, { type: "idk", questionId: "stack" });
+    assert.equal(step.kind, "subquestion");
+    assert.equal(readSession(project)?.answers.length, 0);
+    if (step.kind !== "subquestion") return;
+    assert.match(cardDocument(step, "nonce"), /smaller question/);
+  });
+
+  it("shows the hint and stores the second reason from the card", () => {
+    const project = tempProject();
+    const deps = { projectRoot: project, clock };
+    startSession(deps, { goal: "Notes API" });
+    const hinted = applyCardMessage(deps, {
+      type: "answer",
+      questionId: "stack",
+      optionId: "node",
+      reason: "Python is easier to read for this class",
+    });
+    assert.equal(hinted.kind, "question");
+    if (hinted.kind !== "question") return;
+    assert.match(hinted.hint ?? "", /names the language they chose/);
+    assert.equal(hinted.reason, "Python is easier to read for this class");
+    assert.equal(hinted.selectedOptionId, "node");
+    assert.match(cardDocument(hinted, "nonce"), /class="hint"/);
+    assert.equal(readSession(project)?.answers.length, 0);
+
+    const stored = applyCardMessage(deps, {
+      type: "answer",
+      questionId: "stack",
+      optionId: "node",
+      reason: "Python is still what I want here",
+    });
+    assert.equal(stored.kind, "question");
+    assert.equal(readSession(project)?.answers[0]?.reason, "Python is still what I want here");
+    assert.equal(readSession(project)?.answers[0]?.optionId, "node");
+  });
+
   it("escapes question text and refuses the coach repository", () => {
     const html = cardDocument({
       kind: "question",
