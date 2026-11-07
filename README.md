@@ -2,7 +2,7 @@
 
 A Cursor plugin that keeps you in the decision loop while building a project: level-aware questions, explained options, and a written record of every architecture decision.
 
-Status: slice 3. The card asks for a level, branches on "I don't know", and checks the reason once. See [PLAN.md](PLAN.md).
+Status: slice 4. The model may add project options and questions. The five core decisions still export if that call is off or invalid. See [PLAN.md](PLAN.md).
 
 ## Run
 
@@ -28,9 +28,10 @@ At the start, rate each area. **I don't know** walks the smaller questions for a
 
 Call the tools against the student project, not this repository:
 
-1. `start_session` with `projectRoot` and `goal`
-2. `next_question`
-3. `record_answer` with the student's option and their own reason
-4. `export_decisions`
+1. `start_session` with `projectRoot` and `goal`. Pass `model` false to keep the five core decisions only.
+2. `add_project_questions` for an option or a question this project needs. A failed call leaves the core tree in place. Do not send a lesson.
+3. `next_question`
+4. `record_answer` with the student's option and their own reason
+5. `export_decisions`
 
-The session is stored at `.learn-coach/session.json` inside the student project. Export writes `DECISIONS.md` and `PLAN.md` there. The core tree does not need a model. "I don't know" branching and the why-check come in a later slice; this version stores the reason verbatim.
+The session is stored at `.learn-coach/session.json` inside the student project. Export writes `DECISIONS.md` and `PLAN.md` there. The core tree does not need a model. Project questions are asked after the five core decisions, and a beginner confirms them instead of walking a generated lesson.
