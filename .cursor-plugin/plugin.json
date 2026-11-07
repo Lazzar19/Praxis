@@ -1,0 +1,7 @@
+{
+  "name": "learn-coach",
+  "displayName": "Learn Coach",
+  "version": "0.1.0",
+  "description": "Keeps students in the architecture decision loop before any code is written.",
+  "keywords": ["learning", "architecture", "mcp", "decisions"]
+}
