@@ -2,7 +2,7 @@
 
 A Cursor plugin that keeps you in the decision loop while building a project: level-aware questions, explained options, and a written record of every architecture decision.
 
-Status: slice 2. The question card and the MCP tools share one session. See [PLAN.md](PLAN.md).
+Status: slice 3. The card asks for a level, branches on "I don't know", and checks the reason once. See [PLAN.md](PLAN.md).
 
 ## Run
 
@@ -21,6 +21,8 @@ Cursor starts the server from `.cursor/mcp.json` with `node dist/index.js`. Buil
 `npm run build` also writes `dist/extension.cjs`. In the Run and Debug view, start **Run Praxis**. That opens `examples/student` in an extension host. Run **Praxis: Show question card**.
 
 The card shows the current question, its options, and one progress line. Record an answer there, or with `record_answer`. Both write the same `.learn-coach/session.json`.
+
+At the start, rate each area. **I don't know** walks the smaller questions for a beginner, and shows an explanation an intermediate or advanced student must confirm. A reason that names a different option is kept only on the second try, word for word.
 
 ## Session
 
