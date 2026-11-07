@@ -81,6 +81,10 @@ export function loadCoreTree(): Question[] {
   return cached;
 }
 
+export function resetCoreTreeCache(): void {
+  cached = undefined;
+}
+
 function readYaml(file: string): unknown {
   try {
     return parse(readFileSync(file, "utf8"));

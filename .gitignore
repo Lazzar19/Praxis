@@ -4,5 +4,8 @@ dist/
 __pycache__/
 .learn-coach/
 .env
+examples/student/.learn-coach/
+examples/student/DECISIONS.md
+examples/student/PLAN.md
 
 PLAN.md

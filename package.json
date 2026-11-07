@@ -3,14 +3,29 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "MCP server that keeps a student in the architecture decision loop before any code is written.",
+  "displayName": "Praxis",
+  "description": "MCP server and question card that keep a student in the architecture decision loop before any code is written.",
   "engines": {
-    "node": ">=20"
+    "node": ">=20",
+    "vscode": "^1.95.0"
+  },
+  "main": "./dist/extension.cjs",
+  "activationEvents": [
+    "onCommand:praxis.showQuestion"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "praxis.showQuestion",
+        "title": "Show question card",
+        "category": "Praxis"
+      }
+    ]
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.extension.json && esbuild src/extension/extension.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/extension.cjs --external:vscode --sourcemap",
     "start": "node dist/index.js",
-    "test": "tsx --test src/*.test.ts"
+    "test": "tsx --test src/*.test.ts src/extension/*.test.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.4.0",
@@ -20,6 +35,8 @@
   "devDependencies": {
     "@modelcontextprotocol/client": "^2.4.0",
     "@types/node": "^26.6.6",
+    "@types/vscode": "^1.145.0",
+    "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }
