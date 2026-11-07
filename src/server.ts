@@ -14,6 +14,7 @@ import {
   recordAnswer,
   startSession,
 } from "./flow.js";
+import { formatReview, formatScaffold, reviewTodo, scaffoldTodos } from "./scaffold.js";
 import { additionInputSchema } from "./additions.js";
 import { packageRoot } from "./paths.js";
 import type { Clock, Question } from "./types.js";
@@ -55,7 +56,7 @@ export function createCoachServer(options: CoachServerOptions = {}): McpServer {
       inputSchema: projectRootSchema.extend({
         goal: z.string().min(1).describe("What the student is building."),
         levels: levelsSchema.optional().describe("Self-rating per area. Omitted areas stay intermediate."),
-        handsOn: z.enum(HANDS_ON).optional().describe("Recorded for later scaffolding. This version does not generate code."),
+        handsOn: z.enum(HANDS_ON).optional().describe("todos writes one marked function per decision after export. full is stored and refused."),
         reset: z.boolean().optional().describe("Replace the session already stored in this project."),
         model: z.boolean().optional().describe("When false, add_project_questions is refused and the core tree is the whole session."),
       }),
@@ -101,7 +102,7 @@ export function createCoachServer(options: CoachServerOptions = {}): McpServer {
     "export_decisions",
     {
       title: "Export decisions",
-      description: "Write DECISIONS.md and PLAN.md in the student project root from the session. Requires an answer for every question, including project-specific ones. Does not generate project code.",
+      description: "Write DECISIONS.md and PLAN.md in the student project root from the session. Requires an answer for every question, including project-specific ones. Does not write source code. Call scaffold_todos next when hands-on mode is todos.",
       inputSchema: projectRootSchema,
     },
     async ({ projectRoot }) => guard(() => {
@@ -120,6 +121,34 @@ export function createCoachServer(options: CoachServerOptions = {}): McpServer {
     async ({ projectRoot, ...additions }) => guard(() => {
       const result = addProjectQuestions(flowOptions(projectRoot), additions);
       return { text: formatAdditions(result), data: result };
+    }),
+  );
+
+  server.registerTool(
+    "scaffold_todos",
+    {
+      title: "Scaffold TODOs",
+      description: "After export, write one stub function per decision under src/. The language follows the stack choice: Node.js writes TypeScript, Python writes Python, Go writes Go. Any other stack choice writes TypeScript. Each stub contains one TODO(learn-coach:<questionId>) marker. Do not fill the function in. A file whose marker is already gone is left as the student wrote it. Refuses hands-on mode full.",
+      inputSchema: projectRootSchema,
+    },
+    async ({ projectRoot }) => guard(() => {
+      const result = scaffoldTodos(flowOptions(projectRoot));
+      return { text: formatScaffold(result), data: result };
+    }),
+  );
+
+  server.registerTool(
+    "review_todo",
+    {
+      title: "Review TODO",
+      description: "Read the stub for one decision. If the TODO marker is still there, the student has not written the function. If it is gone, return the function source and the decision that required it: choice, the student's reason, and the why rubric. Judge the function against that decision. Do not rewrite the function and do not score it.",
+      inputSchema: projectRootSchema.extend({
+        questionId: z.string().min(1).describe("The decision whose stub the student wrote."),
+      }),
+    },
+    async ({ projectRoot, questionId }) => guard(() => {
+      const result = reviewTodo(flowOptions(projectRoot), questionId);
+      return { text: formatReview(result), data: result };
     }),
   );
 

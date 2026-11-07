@@ -6,7 +6,7 @@ import { fillTemplate } from "./template.js";
 import type { Question, Session } from "./types.js";
 
 const HANDS_ON_COPY = {
-  todos: "todos. When scaffolding starts, the student writes one marked function per feature.",
+  todos: "todos. After export, scaffold_todos writes one stub function per decision. The student writes that function.",
   full: "full. Full generation is stored for later and this export does not generate code.",
 } as const;
 

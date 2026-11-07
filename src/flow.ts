@@ -361,7 +361,7 @@ export function formatRecord(result: RecordResult): string {
 }
 
 export function formatExport(result: ExportResult): string {
-  return `Wrote ${result.decisionsPath} and ${result.planPath} (${result.decisionCount} decisions).`;
+  return `Wrote ${result.decisionsPath} and ${result.planPath} (${result.decisionCount} decisions). Call scaffold_todos to write one TODO per decision.`;
 }
 
 function resolveFlow(options: FlowOptions): ResolvedFlow {

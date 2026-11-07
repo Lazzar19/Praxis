@@ -138,4 +138,29 @@ describe("MCP session loop", () => {
       await server.close();
     }
   });
+
+  it("refuses to scaffold before export", async () => {
+    const project = tempProject();
+    const server = createCoachServer({ clock });
+    const client = new Client({ name: "learn-coach-test", version: "0.0.0" });
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+
+    try {
+      await client.callTool({
+        name: "start_session",
+        arguments: { projectRoot: project, goal: "Notes API" },
+      });
+      const refused = await client.callTool({
+        name: "scaffold_todos",
+        arguments: { projectRoot: project },
+      });
+      assert.equal(refused.isError, true);
+      assert.match(text(refused), /Export the decisions/);
+    } finally {
+      await client.close();
+      await server.close();
+    }
+  });
 });
