@@ -1,0 +1,126 @@
+import { readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
+const EDIT_TOOLS = new Set(["Write", "StrReplace", "Delete", "EditNotebook", "Edit", "ApplyPatch"]);
+
+export function parseProgress(text) {
+  const progress = { status: null, topic: "", bypass: "none" };
+  for (const line of text.split(/\r?\n/)) {
+    const status = /^Status:\s*(pending|confirmed)\s*$/i.exec(line);
+    if (status) progress.status = status[1].toLowerCase();
+    const topic = /^Topic:\s*(.*?)\s*$/.exec(line);
+    if (topic) progress.topic = topic[1];
+    const bypass = /^Bypass:\s*(none|one-step)\s*$/i.exec(line);
+    if (bypass) progress.bypass = bypass[1].toLowerCase();
+  }
+  return progress;
+}
+
+export function projectRoot(input, env = process.env) {
+  if (typeof env.CURSOR_PROJECT_DIR === "string" && env.CURSOR_PROJECT_DIR.length > 0) {
+    return path.resolve(env.CURSOR_PROJECT_DIR);
+  }
+  const roots = input.workspace_roots;
+  if (Array.isArray(roots) && typeof roots[0] === "string" && roots[0].length > 0) {
+    return path.resolve(roots[0]);
+  }
+  if (typeof input.cwd === "string" && input.cwd.length > 0) return path.resolve(input.cwd);
+  return process.cwd();
+}
+
+export function sessionContext(progress) {
+  if (progress.status !== "pending") return "";
+  const topic = progress.topic.length > 0 ? progress.topic : "the open question";
+  return `Praxis has an open decision: ${topic}. Continue that question in this chat before writing project code. Do not ask the student to run a command. The note is .learn-coach/progress.md.`;
+}
+
+export function gateEdit(progress, filePath, root) {
+  if (progress.status !== "pending") return { permission: "allow" };
+  if (isNotesFile(filePath, root)) return { permission: "allow" };
+  if (progress.bypass === "one-step") return { permission: "allow" };
+  const topic = progress.topic.length > 0 ? progress.topic : "the open question";
+  return {
+    permission: "deny",
+    user_message: `Praxis is waiting on an open decision: ${topic}.`,
+    agent_message: `Do not edit project files until the student confirms "${topic}". You may update .learn-coach/progress.md. Set Bypass to one-step only when they asked to do just this step without questions. That bypass covers one step.`,
+  };
+}
+
+export function clearOneStep(text) {
+  return text.replace(/^Bypass:[ \t]*one-step[ \t]*$/gim, "Bypass: none");
+}
+
+export function editPath(input) {
+  const toolInput = input.tool_input;
+  if (!toolInput || typeof toolInput !== "object") return "";
+  for (const key of ["path", "file_path", "target_file", "filePath"]) {
+    const value = toolInput[key];
+    if (typeof value === "string" && value.length > 0) return value;
+  }
+  return "";
+}
+
+function isNotesFile(filePath, root) {
+  if (filePath.length === 0) return false;
+  const notes = path.resolve(root, ".learn-coach");
+  const resolved = path.resolve(root, filePath);
+  return resolved === notes || resolved.startsWith(notes + path.sep);
+}
+
+function progressFile(root) {
+  return path.join(root, ".learn-coach", "progress.md");
+}
+
+function readProgress(root) {
+  try {
+    return readFileSync(progressFile(root), "utf8");
+  } catch {
+    return "";
+  }
+}
+
+function respond(command, input) {
+  const root = projectRoot(input);
+  const text = readProgress(root);
+  const progress = parseProgress(text);
+  if (command === "session") {
+    const context = sessionContext(progress);
+    return context.length > 0 ? { additional_context: context } : {};
+  }
+  if (command === "stop") {
+    if (progress.bypass === "one-step") {
+      writeFileSync(progressFile(root), clearOneStep(text), "utf8");
+    }
+    return {};
+  }
+  const toolName = typeof input.tool_name === "string" ? input.tool_name : "";
+  if (!EDIT_TOOLS.has(toolName)) return { permission: "allow" };
+  return gateEdit(progress, editPath(input), root);
+}
+
+async function main() {
+  const command = process.argv[2] ?? "";
+  const raw = await new Promise((resolve) => {
+    let body = "";
+    process.stdin.setEncoding("utf8");
+    process.stdin.on("data", (chunk) => {
+      body += chunk;
+    });
+    process.stdin.on("end", () => resolve(body));
+  });
+  let input = {};
+  try {
+    input = raw.trim().length > 0 ? JSON.parse(raw) : {};
+  } catch {
+    input = {};
+  }
+  const output = command === "gate" || command === "session" || command === "stop"
+    ? respond(command, input)
+    : {};
+  process.stdout.write(`${JSON.stringify(output)}\n`);
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

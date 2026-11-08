@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [{ "command": "node hooks/praxis.mjs session" }],
+    "preToolUse": [
+      {
+        "command": "node hooks/praxis.mjs gate",
+        "matcher": "Write|StrReplace|Delete|EditNotebook|Edit|ApplyPatch"
+      }
+    ],
+    "stop": [{ "command": "node hooks/praxis.mjs stop" }]
+  }
+}
