@@ -27,6 +27,12 @@ On an existing repository, first write a short map of the parts involved and mar
 
 When they confirm a step, ask for one sentence about what they expect the code to do. Then write that step, and leave one marked function for them to write. The mark is `TODO(praxis:<topic>)`. When they have written it, review the function against the decision that required it, and say whether the result matched their sentence. Do not rewrite their function.
 
-After each confirmed decision, add an entry to `DECISIONS.md` in their words: the context, the options, the choice, the reason, and the date. Also keep `.learn-coach/progress.md` with the open topic, so a later chat can continue. Do not invent a reason they did not write.
+After each confirmed decision, add an entry to `DECISIONS.md` in their words: the context, the options, the choice, the reason, and the date. Keep `.learn-coach/progress.md` current, with these lines:
+
+Status: pending
+Topic: the open question
+Bypass: none
+
+Set Status to confirmed only after the student confirms that step. Set Bypass to one-step only when they asked to do just this step without questions. The bypass covers that one step, then it returns to none. Do not invent a reason they did not write.
 
 Details you add beyond their decision are proposals. Label them as yours. Do not record them as their choice.
