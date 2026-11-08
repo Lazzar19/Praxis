@@ -1,20 +1,21 @@
-# Learn Coach: implementation plan
+# Praxis
 
-A Cursor extension that keeps the student in the decision loop. Before any project code is written, the student answers level-aware questions, picks between explained options, and confirms a short reason. The coach then writes a `DECISIONS.md` the student can reread, and a `PLAN.md` the coding agent must follow.
+A Cursor plugin that teaches in the chat the student already opened. They describe what they want to build. Praxis asks one decision at a time, explains each option in terms of that project, and waits for their own words. Code for a step starts only after they confirm it.
 
-Decisions below were locked on 2026-11-04. Implement from [Build order](#build-order). The comparison tables that led here are removed on purpose, so the next session builds the chosen path.
+Display name: Praxis. Package name: `learn-coach`.
 
-Repository name: `learn-coach`. Display name: Learn Coach.
+This plan replaces the one locked on 2026-11-04. That plan used a fixed YAML quiz and a question card outside the chat. Those pieces stay in the repository until a later slice removes them from the path a student follows. New work follows the slices below.
 
-## Goals
-- The student makes every architecture decision, with enough explanation to make it consciously.
-- Questions adapt to the student's level (beginner / intermediate / advanced) and to "I don't know" answers.
-- The output in the target project is a `DECISIONS.md`, plus a project plan the coding agent follows.
+## Goal
+
+From the first description of a product, the student meets enough explained decisions that they choose and can say why. A short prompt does not collapse into one or two questions.
 
 ## Non-goals
-- No custom model and no fine-tuning. The Cursor agent's own model does the reasoning.
-- No cloud backend and no accounts. State stays on disk.
-- No multi-question quiz, no decision timeline, no skill map, no metrics, and no marketplace release until the slices below say so.
+
+- No custom model and no extra account. The Cursor conversation is the teacher.
+- No attempt to intercept Cursor's own clarifying-question control and multiply it.
+- No slash command to turn learning on.
+- No marketplace release, fading, timeline, or skill map in these slices.
 
 ---
 
@@ -22,47 +23,46 @@ Repository name: `learn-coach`. Display name: Learn Coach.
 
 | # | Topic | Choice | Why |
 |---|---|---|---|
-| 1 | Shell | VS Code extension + local MCP server, plus a rule that blocks project code until export | Question cards sit outside the chat, where accepting the model's default is easiest. Rules and the server work before the panel exists |
-| 2 | Server language | TypeScript, MCP SDK v2 (`@modelcontextprotocol/server`) | Official SDK, and the extension is TypeScript too. The v1 package name was `@modelcontextprotocol/sdk` |
-| 3 | Session storage | JSON file in the target project: `.learn-coach/session.json` | One student, one document: level, questions, answers, decisions. Readable and safe to commit. `DECISIONS.md` is the report generated from this file |
-| 4 | Level | Self-rating per area, then adapt | Fast start. The level moves one step after three answers in the same area, so one reply cannot swing it |
-| 5 | Questions | Hybrid | A hand-written core tree always finishes a session. The model may add project-specific options and extra questions later |
-| 6 | "I don't know" | Depends on level | Beginners get short sub-questions. Advanced students get a short explanation and a recommendation. Both must confirm before it counts as their decision |
-| 7 | Understanding check | One "why?" per decision, checked against the choice | The student's own words become the reason in `DECISIONS.md`. On a mismatch: one hint, one retry, then continue. No separate score and no extra quiz items |
-| 8 | Output | Templates | The file must contain the choice and the reason the student actually gave. Option text lives in YAML; the template assembles the ADR and the agent plan |
-| 9 | Scaffolding | Hands-on level is a setting. Default, and the only mode to build first: skeleton + marked TODOs | The student writes one key function per feature, then the agent reviews it. Full generation stays a later choice for an area they already know |
-| 10 | Fading | Later | A JSON profile is enough when this starts. SQLite waits until cross-project queries need it |
-| 11 | Panel | In scope with the shell, in a small form | Slice 2 shows the current question, its options, and a short progress line. Timeline and skill map wait |
-| 12 | Metrics | Later, local, opt-in | Sessions, decisions, "I don't know" rate, share of TODOs the student wrote. Does not affect the first slices |
+| 1 | Where learning happens | This chat | The student already writes here. A card is a second place to ignore |
+| 2 | How it starts | An always-on rule. No command | Installing the plugin is the only setup |
+| 3 | What starts the interview | A request to build a product, add a feature, or change how it works | A named small edit is not an architecture lesson |
+| 4 | One step without questions | The sentence that this step should be done without questions | Learning returns on the next build request |
+| 5 | Who writes the questions | The model, from the student's prompt | The lesson has to be about their project |
+| 6 | Floor | Level, stack, where data lives, who may see or change it, how it ships | A vague prompt still teaches these five, one question each |
+| 7 | Extra decisions | Anything the prompt opens that the floor does not cover | The floor is a minimum, not the whole conversation |
+| 8 | Shape of a question | What this decision changes here, then each option: what it is, when to choose it, what is given up | A bare list of names is a blind pick |
+| 9 | Recommendation | A suggestion, after the explanations | The student still chooses |
+| 10 | Their words | Choice and reason stored verbatim. One fresh explanation and one retry if the reason describes another option. The second reason is kept | The record is theirs |
+| 11 | Pace | One question, then wait | Several questions in one reply let them skip |
+| 12 | Existing code | A short map of the parts involved, with unknowns marked, then questions only about the part they are changing | Do not re-decide the whole repository |
+| 13 | When code may be written | After they confirm that step | Confirmation covers the step that was explained |
+| 14 | Prediction | Before the confirmed step is written, one sentence about what they expect the code to do. The report afterwards compares that sentence with the result | They meet the code as a check of their own guess |
+| 15 | Their hands | One marked function per confirmed step, for them to write. A review quotes the decision that required it | Reading a diff is weaker practice than writing one piece |
+| 16 | Record | `DECISIONS.md` in the project, in their words, plus `.learn-coach/` notes so a new chat can continue | The file is for the student. The notes are for the model |
+| 17 | Hard gate | A hook refuses file edits while a decision is still open | A rule can be skipped. A hook cannot |
+| 18 | Resume | A session-start hook reloads the notes | A new chat must not forget an open decision |
+| 19 | Level | Changes how much is explained, not who decides | Beginner means more grounding. Advanced means harder assumptions |
 
 ### Rules that bind the choices
 
-- **Where files go.** `.learn-coach/session.json`, `DECISIONS.md`, and the generated `PLAN.md` belong to the project being coached. This repository is the coach itself.
-- **Core tree order.** Stack, then database, then API style, then auth, then deploy. Each node has options, pros, cons, a recommendation per level, an "I don't know" path, and a few phrases a sound reason should touch.
-- **Beginner "I don't know" paths are authored** in that same YAML for the core tree. The model does not invent the lesson.
-- **The core tree completes a session** when the model adds nothing.
-- **Level updates.** Three "I don't know" answers in one area lower that area by one step, and beginner is the floor. Three why-checks that pass without a retry raise it by one step, and advanced is the ceiling. Three is the starting threshold.
+- **Plugin work is not a student session.** Inside this repository, implement this plan. Do not interview the person who is building Praxis.
 - **A recommendation is not a decision** until the student confirms it.
-- **The why-check stores the student's text verbatim.** The model judges fit. It does not rewrite the reason.
-- **Hands-on default** is skeleton plus TODOs. The setting exists in the session from the start; only this mode is implemented in the first scaffolding slice.
-
-### Closed questions
-- A session is per target project. A global profile at `~/.learn-coach` starts only with fading, and it is JSON until a real query workload shows up.
-- During development the extension and MCP server load locally from this repo. Marketplace or Open VSX comes after the panel is worth installing.
+- **An explanation is not a quiz.** Teach the idea, then ask them to use it on their project.
+- **Details the model adds** are labeled as proposals. They are not written down as the student's decision.
+- **Small edit.** Explain, rename, format, or fix a typo in a place they name. Do that, and do not open the floor.
+- **The old path.** The YAML tree, the question card, and `scaffold_todos` are the previous product. Do not extend them. Remove them from the student path in the last slice.
 
 ---
 
 ## What a session does
 
-1. The student rates themselves per area and the hands-on mode is recorded (default: write the TODOs).
-2. The server asks the next core question, with pros, cons, and a level-aware recommendation.
-3. "I don't know" branches as in decision 6, then returns to a confirmable choice.
-4. The student states why, in their own words. One hint and one retry if the reason misses the choice.
-5. The answer is appended to `.learn-coach/session.json`.
-6. After the tree, export writes `DECISIONS.md` (one ADR per decision: context, options, choice, reason, date) and a `PLAN.md` of ordered features for the coding agent.
-7. Only then may the agent scaffold the project. Until the TODO slice, scaffolding is out of scope: export is the end of the session.
-
-MCP tools for this loop: `start_session`, `next_question`, `record_answer`, `export_decisions`. The why-check is part of recording an answer, not a separate product.
+1. The student describes the product in ordinary language. There is no setup command.
+2. If the repository already has code, the model writes a short map and marks what it could not see.
+3. The model asks the floor, one topic at a time, plus any decision the prompt opens. Each question explains the options for this project.
+4. The student answers in their own words. A reason that describes another option gets one more explanation and one more try.
+5. They confirm the step. Before code, they say what they expect it to do.
+6. The model writes that step and leaves one marked function. The student writes the function. The review quotes the decision.
+7. `DECISIONS.md` gains one entry in their words. `.learn-coach/` keeps the open topic so the next chat continues.
 
 ---
 
@@ -70,46 +70,47 @@ MCP tools for this loop: `start_session`, `next_question`, `record_answer`, `exp
 
 Each slice is done only when its check passes. Do not start a slice early.
 
-### Slice 1 — session writes DECISIONS.md
-TypeScript MCP server, JSON session, static core tree, templates. A Cursor rule tells the agent not to write project code before `export_decisions`.
+### Slice 1 — the chat asks
 
-Done when a session runs in Cursor from the first question through export, the core tree needs no model output, and `DECISIONS.md` matches the choices and reasons in the JSON.
+The always-on rule in `rules/praxis.mdc`. A build request starts the interview. A small edit and a one-step bypass do not. The floor, the explanation, the verbatim reason, the retry, the map, the prediction, the marked function, and `DECISIONS.md` are all in that rule.
 
-### Slice 2 — one question card
-VS Code extension webview that shows the current question, the options, and a one-line progress indicator. It calls the same server as the chat tools.
+Done when a test reads the shipping rule and finds each of those obligations, and the rule does not tell the student to run a command.
 
-Done when a student can answer a question from the card and the JSON session matches an answer given through the tool.
+### Slice 2 — the gate and the memory
 
-### Slice 3 — level, "I don't know", why-check
-Self-rating at start, the three-answer level rule, authored beginner sub-questions, advanced explain-and-confirm, and the single why-check with one hint.
+A session-start hook reloads `.learn-coach/` notes. A hook refuses file edits while a decision is open. "Just this step" is the only bypass, and it covers one step.
 
-Done when a beginner "I don't know" walks the YAML sub-questions, an advanced "I don't know" still requires confirmation, and a mismatched reason is stored only after a retry or the second attempt.
+Done when a pending decision denies a file edit, a confirmed step allows it, and a new session is told about the open decision without a command.
 
-### Slice 4 — project-specific options
-The model may add options and extra questions for this project, in a fixed JSON shape. The core tree still runs if that call fails.
+### Slice 3 — the record and the map
 
-Done when a session with model additions and a session with the model disabled both export a coherent `DECISIONS.md`.
+Confirmed decisions are written to `DECISIONS.md` from the notes, in the student's words. An existing repository gets a map file that keeps unknowns visible.
 
-### Slice 5 — skeleton and TODOs
-Using the exported plan, the agent scaffolds the project and leaves one marked TODO per feature for the student to write, then reviews it. This is the only hands-on mode.
+Done when a session with five confirmed floor topics exports five entries whose reasons match the notes, and a repository that already has code gets a map before new questions.
 
-Done when a fresh export produces a skeleton whose TODOs map to the plan, and a student-written function can be reviewed against the decision that required it.
+### Slice 4 — prediction and the student's function
+
+The confirmed step stores the prediction. The marked function is the only code the model does not write for that step. The review quotes the decision and the prediction.
+
+Done when a filled function is reviewed against the decision that required it, and the report says whether the result matched the student's sentence.
+
+### Slice 5 — one path
+
+The question card, the fixed YAML conversation, and the old scaffold tools leave the path a student follows. The chat rule is the product.
+
+Done when a student project can finish a session without the card and without the core YAML tree.
 
 ---
 
-## Later, not in the slices above
-- Progressive fading, backed first by `~/.learn-coach` JSON. SQLite only if cross-project queries outgrow that file.
-- Full code generation as a hands-on choice for a mastered area.
-- Decision timeline and skill map in the panel.
-- Opt-in local metrics.
-- Publishing to the VS Code Marketplace or Open VSX.
+## Later
 
-## First files when implementation starts
-- `package.json` — MCP server and, from slice 2, the extension
-- `src/server/` — the four tools and the session read/write
-- `questions/core.yaml` — the five core decisions
-- `templates/` — `DECISIONS.md` and the student `PLAN.md`
-- `rules/` — no project code until export
-- `src/extension/` — slice 2 only
+- Publishing to the Cursor marketplace.
+- Fading hints across projects.
+- A decision timeline in a panel.
 
-Requires Node.js 20 or newer. Run `npm install` and `npm run build` before Cursor starts the server.
+## Files this plan starts from
+
+- `rules/praxis.mdc` — the interview, slice 1
+- `.cursor/hooks.json` — the gate and the memory, slice 2
+- `templates/` — `DECISIONS.md`, slice 3
+- `.learn-coach/` in the student project — notes, not the plugin source
