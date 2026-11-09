@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { ensureMap, writeRecord } from "./record.mjs";
 
 const EDIT_TOOLS = new Set(["Write", "StrReplace", "Delete", "EditNotebook", "Edit", "ApplyPatch"]);
 
@@ -85,13 +86,16 @@ function respond(command, input) {
   const text = readProgress(root);
   const progress = parseProgress(text);
   if (command === "session") {
-    const context = sessionContext(progress);
+    const mapNote = ensureMap(root);
+    writeRecord(root);
+    const context = [sessionContext(progress), mapNote].filter((part) => part.length > 0).join("\n\n");
     return context.length > 0 ? { additional_context: context } : {};
   }
   if (command === "stop") {
     if (progress.bypass === "one-step") {
       writeFileSync(progressFile(root), clearOneStep(text), "utf8");
     }
+    writeRecord(root);
     return {};
   }
   const toolName = typeof input.tool_name === "string" ? input.tool_name : "";
