@@ -24,7 +24,7 @@ A short request still gets a separate question for your level, the stack, where 
 
 While a decision is open, edits outside `.learn-coach/` are refused. Asking to do just this step allows that one step, and the next edit waits again. A new chat is told about the open decision.
 
-Confirmed decisions are appended to `.learn-coach/decisions.md`. `DECISIONS.md` is generated from that file, with the reason unchanged. If the project already has code, `.learn-coach/map.md` lists the parts and leaves unknowns visible before a new question.
+Confirmed decisions are appended to `.learn-coach/decisions.md`. `DECISIONS.md` is generated from that file, with the reason unchanged. If the project already has code, `.learn-coach/map.md` lists the parts before a new question. A part stays under Unknowns until it has been read, and a file that appears later is added there.
 
 ## Previous path
 
