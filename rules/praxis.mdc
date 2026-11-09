@@ -25,7 +25,7 @@ Accept their own words. Keep the choice and the reason as they wrote them. If th
 
 On an existing repository, first write a short map of the parts involved in `.learn-coach/map.md` and mark what you could not see under Unknowns. Leave a part under Unknowns until you have read it and written what it does under Parts. Then ask only about the part they are changing.
 
-When they confirm a step, ask for one sentence about what they expect the code to do. Then write that step, and leave one marked function for them to write. The mark is `TODO(praxis:<topic>)`. When they have written it, review the function against the decision that required it, and say whether the result matched their sentence. Do not rewrite their function.
+When they confirm a step, ask for one sentence about what they expect the code to do. Store that sentence as Prediction in the decision block, unchanged. Then write that step, and leave one marked function for them to write. The mark is `TODO(praxis:<topic>)`. Do not remove that mark, and do not write the body of that function. When they have written it, review the function against the decision that required it, and say whether the result matched their sentence. Record the verdict in `.learn-coach/review.md` as `Matched: yes` or `Matched: no`. Do not rewrite their function.
 
 After each confirmed decision, append a block to `.learn-coach/decisions.md` in their words. Do not write `DECISIONS.md` yourself; it is generated from those notes and keeps the reason unchanged. Use this shape, including a `Goal:` line once at the top:
 
@@ -37,6 +37,8 @@ Choice: the option they chose
 Date: 2026-11-08
 Reason:
 their reason, unchanged
+Prediction:
+what they expect the code to do
 ## End
 
 Keep `.learn-coach/progress.md` current, with these lines:
