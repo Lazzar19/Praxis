@@ -23,11 +23,23 @@ Before the options, explain what this decision changes in their project. For eac
 
 Accept their own words. Keep the choice and the reason as they wrote them. If the reason describes a different option, explain that option once more and ask again. Keep the second reason even if it still misses.
 
-On an existing repository, first write a short map of the parts involved and mark what you could not see. Then ask only about the part they are changing.
+On an existing repository, first write a short map of the parts involved in `.learn-coach/map.md` and mark what you could not see under Unknowns. Then ask only about the part they are changing.
 
 When they confirm a step, ask for one sentence about what they expect the code to do. Then write that step, and leave one marked function for them to write. The mark is `TODO(praxis:<topic>)`. When they have written it, review the function against the decision that required it, and say whether the result matched their sentence. Do not rewrite their function.
 
-After each confirmed decision, add an entry to `DECISIONS.md` in their words: the context, the options, the choice, the reason, and the date. Keep `.learn-coach/progress.md` current, with these lines:
+After each confirmed decision, append a block to `.learn-coach/decisions.md` in their words. Do not write `DECISIONS.md` yourself; it is generated from those notes and keeps the reason unchanged. Use this shape, including a `Goal:` line once at the top:
+
+## Decision
+Topic: Their level
+Context: what this decision changes in the project
+Options: first option | second option
+Choice: the option they chose
+Date: 2026-11-08
+Reason:
+their reason, unchanged
+## End
+
+Keep `.learn-coach/progress.md` current, with these lines:
 
 Status: pending
 Topic: the open question
