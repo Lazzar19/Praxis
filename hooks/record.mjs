@@ -37,7 +37,7 @@ export function renderDecisions(notes, templates) {
 export function listCodeFiles(root) {
   const found = [];
   function walk(directory, depth) {
-    if (depth > 4 || found.length >= 40) return;
+    if (depth > 4 || found.length > 40) return;
     let entries;
     try {
       entries = readdirSync(directory, { withFileTypes: true });
@@ -45,7 +45,7 @@ export function listCodeFiles(root) {
       return;
     }
     for (const entry of entries) {
-      if (found.length >= 40) return;
+      if (found.length > 40) return;
       if (entry.name === "node_modules" || entry.name === "dist" || entry.name === ".git" || entry.name === ".learn-coach") continue;
       const full = path.join(directory, entry.name);
       if (entry.isDirectory()) walk(full, depth + 1);
@@ -56,24 +56,45 @@ export function listCodeFiles(root) {
   }
   walk(root, 0);
   found.sort();
-  return found;
+  return { files: found.slice(0, 40), truncated: found.length > 40 };
+}
+
+export function syncMap(existing, files, truncated = false) {
+  let text = existing.trim().length > 0 ? `${existing.replace(/\s*$/, "")}\n` : "# Map\n\n## Parts\n\n## Unknowns\n";
+  if (!/^# Map\b/m.test(text)) text = `# Map\n\n${text}`;
+  if (!/^## Parts[ \t]*$/m.test(text)) {
+    text = text.replace(/^# Map[^\n]*\n?/, (heading) => `${heading.trimEnd()}\n\n## Parts\n`);
+  }
+  if (!/^## Unknowns[ \t]*$/m.test(text)) text = `${text.replace(/\s*$/, "")}\n\n## Unknowns\n`;
+  for (const file of files) {
+    if (!sectionMentions(text, "Parts", file)) text = insertLine(text, "Parts", `- ${file}`);
+    if (!described(text, file) && !sectionMentions(text, "Unknowns", file)) {
+      text = insertLine(text, "Unknowns", `- ${file}`);
+    }
+  }
+  if (truncated && !text.includes("Further files were not listed.")) {
+    text = insertLine(text, "Unknowns", "- Further files were not listed.");
+  }
+  return text.endsWith("\n") ? text : `${text}\n`;
 }
 
 export function ensureMap(root) {
-  const files = listCodeFiles(root);
-  if (files.length === 0) return "";
+  if (isPluginProject(root)) return "";
+  const listed = listCodeFiles(root);
+  if (listed.files.length === 0) return "";
   const notes = path.join(root, ".learn-coach");
   const mapPath = path.join(notes, "map.md");
-  if (!existsSync(mapPath)) {
+  const existing = existsSync(mapPath) ? readFileSync(mapPath, "utf8") : "";
+  const next = syncMap(existing, listed.files, listed.truncated);
+  if (next !== existing) {
     mkdirSync(notes, { recursive: true });
-    const extra = files.length >= 40 ? "\n- Further files were not listed." : "";
-    const parts = files.map((file) => `- ${file}`).join("\n");
-    writeFileSync(mapPath, `# Map\n\n## Parts\n${parts}${extra}\n\n## Unknowns\n- What each listed part does, until it is read\n`);
+    writeFileSync(mapPath, next);
   }
   return MAP_NOTE;
 }
 
 export function writeRecord(root) {
+  if (isPluginProject(root)) return false;
   const notesPath = path.join(root, ".learn-coach", "decisions.md");
   let notes;
   try {
@@ -105,6 +126,49 @@ function parseBlock(block) {
     date: field("Date"),
     reason,
   };
+}
+
+function isPluginProject(root) {
+  return existsSync(path.join(root, ".cursor-plugin", "plugin.json"))
+    && existsSync(path.join(root, "rules", "praxis.mdc"));
+}
+
+function described(text, file) {
+  return text.split(/\r?\n/).some((line) => mentionsPath(line, file) && line.trim() !== `- ${file}`);
+}
+
+function sectionMentions(text, heading, file) {
+  const body = sectionBody(text, heading);
+  return body !== null && mentionsPath(body, file);
+}
+
+function sectionBody(text, heading) {
+  const match = new RegExp(`^## ${heading}[ \\t]*$`, "m").exec(text);
+  if (!match) return null;
+  const rest = text.slice(match.index + match[0].length);
+  const next = rest.search(/^## /m);
+  return next === -1 ? rest : rest.slice(0, next);
+}
+
+function mentionsPath(text, file) {
+  const escaped = file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|[^\\w./-])${escaped}(?![\\w./-])`, "m").test(text);
+}
+
+function insertLine(text, heading, line) {
+  const body = sectionBody(text, heading);
+  if (body === null) return text;
+  if (body.split(/\r?\n/).some((item) => item.trim() === line)) return text;
+  const match = new RegExp(`^## ${heading}[ \\t]*$`, "m").exec(text);
+  const start = match.index + match[0].length;
+  const rest = text.slice(start);
+  const next = rest.search(/^## /m);
+  const end = next === -1 ? text.length : start + next;
+  const before = text.slice(0, end).replace(/\s*$/, "");
+  const after = text.slice(end);
+  if (after.length === 0) return `${before}\n${line}\n`;
+  if (after.startsWith("## ")) return `${before}\n${line}\n\n${after}`;
+  return `${before}\n${line}\n${after.replace(/^\n/, "")}`;
 }
 
 function formatOptions(options) {
