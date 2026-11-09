@@ -4,24 +4,12 @@
   "private": true,
   "type": "module",
   "displayName": "Praxis",
-  "description": "MCP server and question card that keep a student in the architecture decision loop before any code is written.",
+  "description": "Teaches in chat before code is written. No setup command.",
   "engines": {
     "node": ">=20",
     "vscode": "^1.95.0"
   },
   "main": "./dist/extension.cjs",
-  "activationEvents": [
-    "onCommand:praxis.showQuestion"
-  ],
-  "contributes": {
-    "commands": [
-      {
-        "command": "praxis.showQuestion",
-        "title": "Show question card",
-        "category": "Praxis"
-      }
-    ]
-  },
   "scripts": {
     "build": "tsc && tsc -p tsconfig.extension.json && esbuild src/extension/extension.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/extension.cjs --external:vscode --sourcemap",
     "start": "node dist/index.js",
