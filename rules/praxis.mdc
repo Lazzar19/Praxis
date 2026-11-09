@@ -23,7 +23,7 @@ Before the options, explain what this decision changes in their project. For eac
 
 Accept their own words. Keep the choice and the reason as they wrote them. If the reason describes a different option, explain that option once more and ask again. Keep the second reason even if it still misses.
 
-On an existing repository, first write a short map of the parts involved in `.learn-coach/map.md` and mark what you could not see under Unknowns. Then ask only about the part they are changing.
+On an existing repository, first write a short map of the parts involved in `.learn-coach/map.md` and mark what you could not see under Unknowns. Leave a part under Unknowns until you have read it and written what it does under Parts. Then ask only about the part they are changing.
 
 When they confirm a step, ask for one sentence about what they expect the code to do. Then write that step, and leave one marked function for them to write. The mark is `TODO(praxis:<topic>)`. When they have written it, review the function against the decision that required it, and say whether the result matched their sentence. Do not rewrite their function.
 
