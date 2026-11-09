@@ -19,7 +19,7 @@ export function parseDecisions(text) {
 
 export function renderDecisions(notes, templates) {
   const parsed = parseDecisions(notes);
-  const entries = parsed.decisions.map((decision, index) => fill(templates.entry, {
+  const entries = parsed.decisions.map((decision, index) => withPrediction(fill(templates.entry, {
     number: String(index + 1),
     title: decision.topic,
     prompt: decision.context,
@@ -27,7 +27,7 @@ export function renderDecisions(notes, templates) {
     choice: decision.choice,
     reason: decision.reason,
     date: decision.date,
-  }));
+  }), decision.prediction));
   return fill(templates.page, {
     goal: parsed.goal,
     entries: entries.join("\n\n"),
@@ -113,7 +113,12 @@ function parseBlock(block) {
   const reasonAt = body.search(/^Reason:\r?\n/m);
   if (reasonAt < 0) return null;
   const head = body.slice(0, reasonAt);
-  const reason = body.slice(reasonAt).replace(/^Reason:\r?\n/, "").replace(/\n$/, "");
+  const reasonAndRest = body.slice(reasonAt).replace(/^Reason:\r?\n/, "");
+  const predictionAt = reasonAndRest.search(/^Prediction:\r?\n/m);
+  const reason = (predictionAt >= 0 ? reasonAndRest.slice(0, predictionAt) : reasonAndRest).replace(/\n$/, "");
+  const prediction = predictionAt >= 0
+    ? reasonAndRest.slice(predictionAt).replace(/^Prediction:\r?\n/, "").replace(/\n$/, "")
+    : "";
   const field = (name) => {
     const match = new RegExp(`^${name}:[ \t]*(.*)$`, "m").exec(head);
     return match ? match[1] : "";
@@ -125,7 +130,13 @@ function parseBlock(block) {
     choice: field("Choice"),
     date: field("Date"),
     reason,
+    prediction,
   };
+}
+
+function withPrediction(entry, prediction) {
+  if (prediction.length === 0) return entry;
+  return `${entry.replace(/\s*$/, "")}\n- **Prediction:** ${prediction}`;
 }
 
 function isPluginProject(root) {

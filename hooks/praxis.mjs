@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { ensureMap, writeRecord } from "./record.mjs";
+import { protectMarkedEdit, recordPractice } from "./review.mjs";
 
 const EDIT_TOOLS = new Set(["Write", "StrReplace", "Delete", "EditNotebook", "Edit", "ApplyPatch"]);
 
@@ -88,7 +89,8 @@ function respond(command, input) {
   if (command === "session") {
     const mapNote = ensureMap(root);
     writeRecord(root);
-    const context = [sessionContext(progress), mapNote].filter((part) => part.length > 0).join("\n\n");
+    const practiceNote = recordPractice(root);
+    const context = [sessionContext(progress), mapNote, practiceNote].filter((part) => part.length > 0).join("\n\n");
     return context.length > 0 ? { additional_context: context } : {};
   }
   if (command === "stop") {
@@ -96,11 +98,14 @@ function respond(command, input) {
       writeFileSync(progressFile(root), clearOneStep(text), "utf8");
     }
     writeRecord(root);
+    recordPractice(root);
     return {};
   }
   const toolName = typeof input.tool_name === "string" ? input.tool_name : "";
   if (!EDIT_TOOLS.has(toolName)) return { permission: "allow" };
-  return gateEdit(progress, editPath(input), root);
+  const gated = gateEdit(progress, editPath(input), root);
+  if (gated.permission === "deny") return gated;
+  return protectMarkedEdit(root, input);
 }
 
 async function main() {
