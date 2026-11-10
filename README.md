@@ -49,11 +49,12 @@ Trimmed excerpts (from a real run; `…` omits repeated floor guidance):
 === 1 session ===
 stdout JSON keys: additional_context
 ...
-Praxis has an open decision: the floor. Continue that question in this chat before writing project code.
-A map of the existing code is in .praxis/map.md.
+This project has not chosen Praxis yet.
+...
+two options: turn Praxis on for this project, or leave it off.
 
-=== 2 gate Write (Status: pending) ===
-{"permission":"deny","user_message":"Praxis is waiting on an open decision: the floor.",...}
+=== 2 gate Write (Status: choosing) ===
+{"permission":"deny","user_message":"Choose whether Praxis is on for this project.",...}
 
 === 5 gate StrReplace (marker removal) ===
 {"permission":"deny","user_message":"Praxis left TODO(praxis:Where the data lives) for you to write.",...}
@@ -125,6 +126,8 @@ Build requests start the interview: all five floor topics (level, stack, where d
 
 Reasons are stored verbatim, with one retry if the reason fits another option.
 
+The first question in a new project is a choice: turn Praxis on, or leave it off. The choice is stored in `.praxis/progress.md`. Off means no further questions and no edit block. Asking to turn Praxis on starts the floor.
+
 **Skips:** named small edits; **one-step bypass** for a single step without questions (resets on stop).
 
 Existing code triggers a map under `.praxis/map.md` before new questions (see [How it works](#how-it-works)).
@@ -134,7 +137,7 @@ After confirmation: one prediction sentence, then code with one `TODO(praxis:<to
 ## Session lifecycle
 
 1. Student opens a **new** Agent chat and asks to build or change something substantial.
-2. **sessionStart** hook runs: may open the floor (`Status: pending`), inject resume context, sync **map**, export **DECISIONS.md** if notes exist, scan **marks** / **report**.
+2. **sessionStart** hook runs: a project with no choice is `Status: choosing` until they turn Praxis on or leave it off. On continues into the floor. Off stays quiet.
 3. Model uses **AskQuestion** for floor topics and follow-ons (rule); appends confirmed blocks to `.praxis/decisions.md`.
 4. While **`Status: pending`**, **preToolUse** denies project file edits (notes and one-step bypass excepted).
 5. Student confirms a step; model records **Prediction** and sets progress to **`confirmed`** when appropriate.

@@ -1,31 +1,30 @@
-Student project: /tmp/praxis-demo-expense-CfbGRe
-Hook binary: /workspace/hooks/praxis.mjs
+Student project: /tmp/praxis-demo-expense-yr2y8Y
+Hook binary: /home/lazzar20/Projects/learn-coach/hooks/praxis.mjs
 
-=== 1 session (new chat, existing code → map + floor context) ===
+=== 1 session (new chat → on or off, then a map on disk) ===
 
 stdout JSON keys: additional_context
-Praxis is on. Do not ask the student to run a command.
+This project has not chosen Praxis yet. Do not ask the student to run a command.
 
-From the first prompt, before any project code, use the AskQuestion tool. Do not ask in plain text. Each call contains one question, then wait for the selected answer before the next call. Write the question and the options from what the student said. There is no fixed list of answers. A short prompt still covers every floor topic, each as its own question. For each one, explain in the question prompt what the decision changes in this project, then each option: what it is, when someone would choose it, and what they give up. A recommendation is only a suggestion. One answer does not close two topics.
+Call AskQuestion once, before any project code and before the floor. One question, two options: turn Praxis on for this project, or leave it off. Do not ask in plain text.
 
-1. Their level for the work in front of them.
-2. The stack.
-3. Where the data lives.
-4. Who may see or change it.
-5. How it ships.
+If they choose off, write these lines to .praxis/progress.md and do not ask another question:
+Praxis: off
+Status: off
+Bypass: none
 
-Also ask about a decision their prompt opens that those five do not cover. Skip the floor only when they name a small edit: explain this code, rename, format, or fix a typo. When they say to do just this step without questions, set Bypass to one-step and do that step only.
+If they choose on, write these lines, then ask the floor one question at a time:
+Praxis: on
+Status: pending
+Topic: the floor
+Bypass: none
 
-Praxis has an open decision: the floor. Continue that question in this chat before writing project code. Do not ask the student to run a command. The note is .praxis/progress.md.
-
-A map of the existing code is in .praxis/map.md. Mark anything you could not see under Unknowns before asking a new question.
-
-=== 2 gate Write (Status: pending → deny project file) ===
+=== 2 gate Write (Status: choosing → deny project file) ===
 
 {
   "permission": "deny",
-  "user_message": "Praxis is waiting on an open decision: the floor.",
-  "agent_message": "Do not edit project files until the student confirms \"the floor\". You may update .praxis/progress.md. Set Bypass to one-step only when they asked to do just this step without questions. That bypass covers one step."
+  "user_message": "Choose whether Praxis is on for this project.",
+  "agent_message": "Call AskQuestion once with two options: turn Praxis on for this project, or leave it off. Do not edit project files until they choose. You may update .praxis/progress.md."
 }
 
 === 3 Model appends decision + sets confirmed (simulated) ===

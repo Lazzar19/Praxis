@@ -89,12 +89,12 @@ try {
   console.log(`Student project: ${project}`);
   console.log(`Hook binary: ${HOOK}`);
 
-  section("1 session (new chat, existing code → map + floor context)");
+  section("1 session (new chat → on or off, then a map on disk)");
   const session1 = runHook("session", project, { cwd: project });
   const ctx1 = session1.additional_context ?? "";
   if (!ctx1.includes("AskQuestion")) fail("session missing AskQuestion guidance");
-  if (!ctx1.includes("Where the data lives")) fail("session missing floor topic");
-  if (!ctx1.includes("map.md")) fail("session missing map note");
+  if (!ctx1.includes("turn Praxis on")) fail("session missing the on/off choice");
+  if (!ctx1.includes("leave it off")) fail("session missing the off option");
   console.log("stdout JSON keys:", Object.keys(session1).join(", "));
   console.log(trimBlock(ctx1));
   if (!existsSync(path.join(project, ".praxis", "map.md"))) {
@@ -104,7 +104,7 @@ try {
     fail("progress.md was not written for floor");
   }
 
-  section("2 gate Write (Status: pending → deny project file)");
+  section("2 gate Write (Status: choosing → deny project file)");
   const denied = runHook("gate", project, {
     tool_name: "Write",
     tool_input: {

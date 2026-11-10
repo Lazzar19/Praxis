@@ -7,14 +7,16 @@ import { protectMarkedEdit, recordPractice } from "./review.mjs";
 const EDIT_TOOLS = new Set(["Write", "StrReplace", "Delete", "EditNotebook", "Edit", "ApplyPatch"]);
 
 export function parseProgress(text) {
-  const progress = { status: null, topic: "", bypass: "none" };
+  const progress = { status: null, topic: "", bypass: "none", praxis: null };
   for (const line of text.split(/\r?\n/)) {
-    const status = /^Status:\s*(pending|confirmed)\s*$/i.exec(line);
+    const status = /^Status:\s*(pending|confirmed|choosing|off)\s*$/i.exec(line);
     if (status) progress.status = status[1].toLowerCase();
     const topic = /^Topic:\s*(.*?)\s*$/.exec(line);
     if (topic) progress.topic = topic[1];
     const bypass = /^Bypass:\s*(none|one-step)\s*$/i.exec(line);
     if (bypass) progress.bypass = bypass[1].toLowerCase();
+    const praxis = /^Praxis:\s*(on|off|choosing)\s*$/i.exec(line);
+    if (praxis) progress.praxis = praxis[1].toLowerCase();
   }
   return progress;
 }
@@ -31,17 +33,22 @@ export function projectRoot(input, env = process.env) {
   return process.cwd();
 }
 
-export const FIRST_REPLY = `Praxis is on. Do not ask the student to run a command.
+export const CHOICE = `This project has not chosen Praxis yet. Do not ask the student to run a command.
 
-From the first prompt, before any project code, use the AskQuestion tool. Do not ask in plain text. Each call contains one question, then wait for the selected answer before the next call. Write the question and the options from what the student said. There is no fixed list of answers. A short prompt still covers every floor topic, each as its own question. For each one, explain in the question prompt what the decision changes in this project, then each option: what it is, when someone would choose it, and what they give up. A recommendation is only a suggestion. One answer does not close two topics.
+Call AskQuestion once, before any project code and before the floor. One question, two options: turn Praxis on for this project, or leave it off. Do not ask in plain text.
 
-1. Their level for the work in front of them.
-2. The stack.
-3. Where the data lives.
-4. Who may see or change it.
-5. How it ships.
+If they choose off, write these lines to .praxis/progress.md and do not ask another question:
+Praxis: off
+Status: off
+Bypass: none
 
-Also ask about a decision their prompt opens that those five do not cover. Skip the floor only when they name a small edit: explain this code, rename, format, or fix a typo. When they say to do just this step without questions, set Bypass to one-step and do that step only.`;
+If they choose on, write these lines, then ask the floor one question at a time:
+Praxis: on
+Status: pending
+Topic: the floor
+Bypass: none`;
+
+export const OFF = `Praxis is off for this project. Do not ask interview questions. If they ask to turn Praxis on, write Praxis: on and Status: pending in .praxis/progress.md, then ask the floor with AskQuestion, one question at a time. Do not ask them to run a command.`;
 
 export function sessionContext(progress) {
   if (progress.status !== "pending") return "";
@@ -49,14 +56,27 @@ export function sessionContext(progress) {
   return `Praxis has an open decision: ${topic}. Continue that question in this chat before writing project code. Do not ask the student to run a command. The note is .praxis/progress.md.`;
 }
 
-export function openFloor(root, progress) {
-  if (isPluginProject(root) || progress.status === "pending" || progress.status === "confirmed") return "";
-  mkdirSync(path.join(root, ".praxis"), { recursive: true });
-  writeFileSync(progressFile(root), "Status: pending\nTopic: the floor\nBypass: none\n");
-  return FIRST_REPLY;
+export function openChoice(root, progress) {
+  if (isPluginProject(root)) return "";
+  if (progress.praxis === "off" || progress.status === "off") return OFF;
+  if (progress.praxis === "on" || progress.status === "pending" || progress.status === "confirmed") return "";
+  if (progress.status !== "choosing") {
+    mkdirSync(path.join(root, ".praxis"), { recursive: true });
+    writeFileSync(progressFile(root), "Praxis: choosing\nStatus: choosing\nTopic: Praxis\nBypass: none\n");
+  }
+  return CHOICE;
 }
 
 export function gateEdit(progress, filePath, root) {
+  if (progress.praxis === "off" || progress.status === "off") return { permission: "allow" };
+  if (progress.status === "choosing") {
+    if (isNotesFile(filePath, root)) return { permission: "allow" };
+    return {
+      permission: "deny",
+      user_message: "Choose whether Praxis is on for this project.",
+      agent_message: "Call AskQuestion once with two options: turn Praxis on for this project, or leave it off. Do not edit project files until they choose. You may update .praxis/progress.md.",
+    };
+  }
   if (progress.status !== "pending") return { permission: "allow" };
   if (isNotesFile(filePath, root)) return { permission: "allow" };
   if (progress.bypass === "one-step") return { permission: "allow" };
@@ -109,9 +129,12 @@ function respond(command, input) {
     const mapNote = ensureMap(root);
     writeRecord(root);
     const practiceNote = recordPractice(root);
-    const floor = openFloor(root, progress);
-    const live = floor.length > 0 ? parseProgress(readProgress(root)) : progress;
-    const context = [floor, sessionContext(live), mapNote, practiceNote].filter((part) => part.length > 0).join("\n\n");
+    const choice = openChoice(root, progress);
+    const live = choice === CHOICE ? parseProgress(readProgress(root)) : progress;
+    if (choice === OFF) return { additional_context: OFF };
+    const context = choice === CHOICE
+      ? CHOICE
+      : [sessionContext(live), mapNote, practiceNote].filter((part) => part.length > 0).join("\n\n");
     return context.length > 0 ? { additional_context: context } : {};
   }
   if (command === "stop") {

@@ -64,21 +64,29 @@ describe("edit gate", () => {
     assert.deepEqual(started, { additional_context: context });
   });
 
-  it("asks every floor topic in the first reply of a new student chat", () => {
+  it("asks whether to turn Praxis on before any project code", () => {
     const project = tempProject();
     const started = run("session", project, { cwd: project }) as { additional_context?: string };
     const context = started.additional_context ?? "";
-    for (const topic of ["Their level", "The stack", "Where the data lives", "Who may see or change it", "How it ships"]) {
-      assert.ok(context.includes(topic), topic);
-    }
     assert.match(context, /AskQuestion/);
-    assert.match(context, /one question/);
-    assert.match(context, /before any project code/);
-    assert.match(context, /no fixed list of answers/);
+    assert.match(context, /turn Praxis on/);
+    assert.match(context, /leave it off/);
     assert.match(context, /Do not ask the student to run a command/);
-    assert.match(readFileSync(path.join(project, ".praxis", "progress.md"), "utf8"), /Status: pending/);
+    assert.match(readFileSync(path.join(project, ".praxis", "progress.md"), "utf8"), /Status: choosing/);
     const denied = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts", contents: "export const started = true;\n" }, cwd: project });
     assert.equal((denied as { permission: string }).permission, "deny");
+    const notes = run("gate", project, { tool_name: "Write", tool_input: { path: ".praxis/progress.md", contents: "Praxis: off\nStatus: off\nBypass: none\n" }, cwd: project });
+    assert.equal((notes as { permission: string }).permission, "allow");
+  });
+
+  it("stays quiet after they leave Praxis off", () => {
+    const project = tempProject();
+    note(project, "Praxis: off\nStatus: off\nBypass: none\n");
+    const started = run("session", project, { cwd: project }) as { additional_context?: string };
+    assert.match(started.additional_context ?? "", /Praxis is off for this project/);
+    assert.doesNotMatch(started.additional_context ?? "", /Their level/);
+    const allowed = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts", contents: "export const started = true;\n" }, cwd: project });
+    assert.equal((allowed as { permission: string }).permission, "allow");
   });
 
   it("denies through the hook, then allows one step and closes the bypass", () => {
