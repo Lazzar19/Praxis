@@ -93,9 +93,14 @@ describe("decision record", () => {
     const map = readFileSync(path.join(project, ".learn-coach", "map.md"), "utf8");
     assert.match(map, /src\/app\.ts/);
     assert.match(section(map, "Unknowns"), /src\/app\.ts/);
+    mkdirSync(path.join(project, "src/a/b/c/d"), { recursive: true });
+    writeFileSync(path.join(project, "src/a/b/c/d/leaf.ts"), "export const leaf = true;\n");
+    run("session", project);
+    const nested = readFileSync(path.join(project, ".learn-coach", "map.md"), "utf8");
+    assert.match(section(nested, "Unknowns"), /src\/a\/b\/c\/d\/leaf\.ts/);
     const again = run("session", project);
     assert.match((again.parsed as { additional_context?: string }).additional_context ?? "", /before asking a new question/);
-    assert.equal(readFileSync(path.join(project, ".learn-coach", "map.md"), "utf8"), map);
+    assert.equal(readFileSync(path.join(project, ".learn-coach", "map.md"), "utf8"), nested);
   });
 
   it("adds a new file under Unknowns and keeps a description already written", () => {

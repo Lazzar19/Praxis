@@ -37,7 +37,7 @@ export function renderDecisions(notes, templates) {
 export function listCodeFiles(root) {
   const found = [];
   function walk(directory, depth) {
-    if (depth > 4 || found.length > 40) return;
+    if (depth > 12 || found.length > 40) return;
     let entries;
     try {
       entries = readdirSync(directory, { withFileTypes: true });

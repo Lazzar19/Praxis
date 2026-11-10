@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, it } from "node:test";
@@ -85,5 +86,46 @@ Matched: yes
     assert.match(report, /Matched: yes/);
     assert.equal(existsSync(path.join(project, ".learn-coach", "session.json")), false);
     assert.equal(existsSync(path.join(project, "questions", "core.yaml")), false);
+  });
+
+  it("runs the plugin stop hook from the student folder", () => {
+    const hooks = JSON.parse(readFileSync(new URL("../hooks/hooks.json", import.meta.url), "utf8")) as {
+      hooks: { stop: { command: string }[] };
+    };
+    const projectHooks = JSON.parse(readFileSync(new URL("../.cursor/hooks.json", import.meta.url), "utf8")) as {
+      hooks: { stop: { command: string }[] };
+    };
+    const command = hooks.hooks.stop[0]?.command ?? "";
+    assert.match(command, /CURSOR_PLUGIN_ROOT/);
+    assert.equal(projectHooks.hooks.stop[0]?.command, "node hooks/praxis.mjs stop");
+
+    const project = tempProject();
+    writeFileSync(path.join(project, ".learn-coach", "decisions.md"), `Goal: Notes API
+
+## Decision
+Topic: How it ships
+Context: How a classmate reaches it.
+Options: one port | a managed host
+Choice: one port
+Date: 2026-11-10
+Reason:
+Only I run it this week.
+## End
+`);
+    writeFileSync(path.join(project, ".learn-coach", "progress.md"), "Status: pending\nTopic: How it ships\nBypass: one-step\n");
+    const result = spawnSync("bash", ["-lc", command], {
+      cwd: project,
+      input: "{}",
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        CURSOR_PROJECT_DIR: project,
+        CURSOR_PLUGIN_ROOT: fileURLToPath(new URL("..", import.meta.url)),
+      },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), {});
+    assert.match(readFileSync(path.join(project, "DECISIONS.md"), "utf8"), /Only I run it this week\./);
+    assert.match(readFileSync(path.join(project, ".learn-coach", "progress.md"), "utf8"), /Bypass: none/);
   });
 });
