@@ -64,6 +64,21 @@ describe("edit gate", () => {
     assert.deepEqual(started, { additional_context: context });
   });
 
+  it("asks every floor topic in the first reply of a new student chat", () => {
+    const project = tempProject();
+    const started = run("session", project, { cwd: project }) as { additional_context?: string };
+    const context = started.additional_context ?? "";
+    for (const topic of ["Their level", "The stack", "Where the data lives", "Who may see or change it", "How it ships"]) {
+      assert.ok(context.includes(topic), topic);
+    }
+    assert.match(context, /first reply/);
+    assert.match(context, /before any project code/);
+    assert.match(context, /Do not ask the student to run a command/);
+    assert.match(readFileSync(path.join(project, ".learn-coach", "progress.md"), "utf8"), /Status: pending/);
+    const denied = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts", contents: "export const started = true;\n" }, cwd: project });
+    assert.equal((denied as { permission: string }).permission, "deny");
+  });
+
   it("denies through the hook, then allows one step and closes the bypass", () => {
     const project = tempProject();
     note(project, pending);

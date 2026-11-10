@@ -134,7 +134,9 @@ describe("decision record", () => {
   it("does not map a repository that has no code, or this plugin", () => {
     const readmeOnly = tempProject();
     writeFileSync(path.join(readmeOnly, "README.md"), "# Notes\n");
-    assert.deepEqual(run("session", readmeOnly).parsed, {});
+    const opened = run("session", readmeOnly);
+    const openedContext = (opened.parsed as { additional_context?: string }).additional_context ?? "";
+    assert.match(openedContext, /first reply/);
     assert.equal(existsSync(path.join(readmeOnly, ".learn-coach", "map.md")), false);
 
     const plugin = tempProject();

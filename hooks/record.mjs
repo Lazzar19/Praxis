@@ -139,7 +139,7 @@ function withPrediction(entry, prediction) {
   return `${entry.replace(/\s*$/, "")}\n- **Prediction:** ${prediction}`;
 }
 
-function isPluginProject(root) {
+export function isPluginProject(root) {
   return existsSync(path.join(root, ".cursor-plugin", "plugin.json"))
     && existsSync(path.join(root, "rules", "praxis.mdc"));
 }

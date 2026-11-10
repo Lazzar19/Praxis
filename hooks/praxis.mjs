@@ -1,7 +1,7 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { ensureMap, writeRecord } from "./record.mjs";
+import { ensureMap, isPluginProject, writeRecord } from "./record.mjs";
 import { protectMarkedEdit, recordPractice } from "./review.mjs";
 
 const EDIT_TOOLS = new Set(["Write", "StrReplace", "Delete", "EditNotebook", "Edit", "ApplyPatch"]);
@@ -31,10 +31,29 @@ export function projectRoot(input, env = process.env) {
   return process.cwd();
 }
 
+export const FIRST_REPLY = `Praxis is on. Do not ask the student to run a command.
+
+The first reply to a request to build a product, add a feature, or change how it works asks every floor topic before any project code. Ask them in that same reply, each as its own question. For each one, explain what the decision changes in this project, then each option: what it is, when someone would choose it, and what they give up. A recommendation is only a suggestion. One answer does not close two topics.
+
+1. Their level for the work in front of them.
+2. The stack.
+3. Where the data lives.
+4. Who may see or change it.
+5. How it ships.
+
+Also ask about a decision their prompt opens that those five do not cover. Skip the floor only when they name a small edit: explain this code, rename, format, or fix a typo. When they say to do just this step without questions, set Bypass to one-step and do that step only.`;
+
 export function sessionContext(progress) {
   if (progress.status !== "pending") return "";
   const topic = progress.topic.length > 0 ? progress.topic : "the open question";
   return `Praxis has an open decision: ${topic}. Continue that question in this chat before writing project code. Do not ask the student to run a command. The note is .learn-coach/progress.md.`;
+}
+
+export function openFloor(root, progress) {
+  if (isPluginProject(root) || progress.status === "pending" || progress.status === "confirmed") return "";
+  mkdirSync(path.join(root, ".learn-coach"), { recursive: true });
+  writeFileSync(progressFile(root), "Status: pending\nTopic: the floor\nBypass: none\n");
+  return FIRST_REPLY;
 }
 
 export function gateEdit(progress, filePath, root) {
@@ -90,7 +109,9 @@ function respond(command, input) {
     const mapNote = ensureMap(root);
     writeRecord(root);
     const practiceNote = recordPractice(root);
-    const context = [sessionContext(progress), mapNote, practiceNote].filter((part) => part.length > 0).join("\n\n");
+    const floor = openFloor(root, progress);
+    const live = floor.length > 0 ? parseProgress(readProgress(root)) : progress;
+    const context = [floor, sessionContext(live), mapNote, practiceNote].filter((part) => part.length > 0).join("\n\n");
     return context.length > 0 ? { additional_context: context } : {};
   }
   if (command === "stop") {

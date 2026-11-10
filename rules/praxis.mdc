@@ -9,7 +9,7 @@ When they ask to build a product, add a feature, or change how it works, ask bef
 
 Skip the interview when they name a small edit: explain this code, rename, format, or fix a typo in a place they point to. When they say to do just this step without questions, do that step only, then ask again on the next build request.
 
-Ask one question at a time, then wait. A short prompt still covers every floor topic, each as its own question:
+On the first reply, ask every floor topic before any project code. A short prompt still covers every floor topic, each as its own question:
 
 1. Their level for the work in front of them.
 2. The stack.
