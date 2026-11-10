@@ -52,7 +52,7 @@ export function createCoachServer(options: CoachServerOptions = {}): McpServer {
     "start_session",
     {
       title: "Start session",
-      description: "Start a Learn Coach session in a student project. Writes .learn-coach/session.json only. Ask the student to rate themselves beginner, intermediate, or advanced for stack, database, api, auth, and deploy, and pass those levels. Omitted areas stay intermediate. Pass reset true to replace an existing session. Pass model false to refuse project-specific additions and keep the five core decisions.",
+      description: "Start a Learn Coach session in a student project. Writes .praxis/session.json only. Ask the student to rate themselves beginner, intermediate, or advanced for stack, database, api, auth, and deploy, and pass those levels. Omitted areas stay intermediate. Pass reset true to replace an existing session. Pass model false to refuse project-specific additions and keep the five core decisions.",
       inputSchema: projectRootSchema.extend({
         goal: z.string().min(1).describe("What the student is building."),
         levels: levelsSchema.optional().describe("Self-rating per area. Omitted areas stay intermediate."),

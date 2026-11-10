@@ -85,7 +85,7 @@ describe("MCP session loop", () => {
       assert.notEqual(exported.isError, true);
       const decisions = readFileSync(path.join(project, "DECISIONS.md"), "utf8");
       const plan = readFileSync(path.join(project, "PLAN.md"), "utf8");
-      const stored = readFileSync(path.join(project, ".learn-coach", "session.json"), "utf8");
+      const stored = readFileSync(path.join(project, ".praxis", "session.json"), "utf8");
       assert.ok(decisions.includes(reason));
       assert.ok(plan.includes(reason));
       assert.ok(stored.includes(reason));

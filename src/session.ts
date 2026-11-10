@@ -72,7 +72,7 @@ export function resolveProjectRoot(projectRoot: string, coachRoot = packageRoot(
 }
 
 export function sessionFile(projectRoot: string, coachRoot = packageRoot()): string {
-  return path.join(resolveProjectRoot(projectRoot, coachRoot), ".learn-coach", "session.json");
+  return path.join(resolveProjectRoot(projectRoot, coachRoot), ".praxis", "session.json");
 }
 
 export function readSession(projectRoot: string, coachRoot = packageRoot()): Session | null {

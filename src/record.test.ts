@@ -32,7 +32,7 @@ const topics = [
 function tempProject(): string {
   const directory = mkdtempSync(path.join(tmpdir(), "praxis-record-"));
   directories.push(directory);
-  mkdirSync(path.join(directory, ".learn-coach"));
+  mkdirSync(path.join(directory, ".praxis"));
   return directory;
 }
 
@@ -69,7 +69,7 @@ describe("decision record", () => {
   it("exports five floor topics with the reasons from the notes", () => {
     const project = tempProject();
     const source = notes();
-    writeFileSync(path.join(project, ".learn-coach", "decisions.md"), source);
+    writeFileSync(path.join(project, ".praxis", "decisions.md"), source);
     const rendered = renderDecisions(source, templates);
     for (const reason of reasons) assert.ok(rendered.includes(reason), reason);
     assert.equal(parseDecisions(source).decisions.map((decision) => decision.reason).join("\n"), reasons.join("\n"));
@@ -90,24 +90,24 @@ describe("decision record", () => {
     const started = run("session", project);
     const context = (started.parsed as { additional_context?: string }).additional_context ?? "";
     assert.match(context, /before asking a new question/);
-    const map = readFileSync(path.join(project, ".learn-coach", "map.md"), "utf8");
+    const map = readFileSync(path.join(project, ".praxis", "map.md"), "utf8");
     assert.match(map, /src\/app\.ts/);
     assert.match(section(map, "Unknowns"), /src\/app\.ts/);
     mkdirSync(path.join(project, "src/a/b/c/d"), { recursive: true });
     writeFileSync(path.join(project, "src/a/b/c/d/leaf.ts"), "export const leaf = true;\n");
     run("session", project);
-    const nested = readFileSync(path.join(project, ".learn-coach", "map.md"), "utf8");
+    const nested = readFileSync(path.join(project, ".praxis", "map.md"), "utf8");
     assert.match(section(nested, "Unknowns"), /src\/a\/b\/c\/d\/leaf\.ts/);
     const again = run("session", project);
     assert.match((again.parsed as { additional_context?: string }).additional_context ?? "", /before asking a new question/);
-    assert.equal(readFileSync(path.join(project, ".learn-coach", "map.md"), "utf8"), nested);
+    assert.equal(readFileSync(path.join(project, ".praxis", "map.md"), "utf8"), nested);
   });
 
   it("adds a new file under Unknowns and keeps a description already written", () => {
     const project = tempProject();
     mkdirSync(path.join(project, "src"));
     writeFileSync(path.join(project, "src", "app.ts"), "export const started = true;\n");
-    writeFileSync(path.join(project, ".learn-coach", "map.md"), `# Map
+    writeFileSync(path.join(project, ".praxis", "map.md"), `# Map
 
 ## Parts
 - src/app.ts — starts the server
@@ -117,7 +117,7 @@ describe("decision record", () => {
 `);
     writeFileSync(path.join(project, "src", "db.ts"), "export const db = true;\n");
     run("session", project);
-    const map = readFileSync(path.join(project, ".learn-coach", "map.md"), "utf8");
+    const map = readFileSync(path.join(project, ".praxis", "map.md"), "utf8");
     assert.match(map, /src\/app\.ts — starts the server/);
     assert.match(map, /who calls the server/);
     assert.match(section(map, "Parts"), /- src\/db\.ts/);
@@ -137,7 +137,7 @@ describe("decision record", () => {
     const opened = run("session", readmeOnly);
     const openedContext = (opened.parsed as { additional_context?: string }).additional_context ?? "";
     assert.match(openedContext, /AskQuestion/);
-    assert.equal(existsSync(path.join(readmeOnly, ".learn-coach", "map.md")), false);
+    assert.equal(existsSync(path.join(readmeOnly, ".praxis", "map.md")), false);
 
     const plugin = tempProject();
     mkdirSync(path.join(plugin, "src"));
@@ -146,9 +146,9 @@ describe("decision record", () => {
     writeFileSync(path.join(plugin, "src", "app.ts"), "export const started = true;\n");
     writeFileSync(path.join(plugin, "rules", "praxis.mdc"), "rule\n");
     writeFileSync(path.join(plugin, ".cursor-plugin", "plugin.json"), "{}\n");
-    writeFileSync(path.join(plugin, ".learn-coach", "decisions.md"), notes());
+    writeFileSync(path.join(plugin, ".praxis", "decisions.md"), notes());
     assert.deepEqual(run("session", plugin).parsed, {});
-    assert.equal(existsSync(path.join(plugin, ".learn-coach", "map.md")), false);
+    assert.equal(existsSync(path.join(plugin, ".praxis", "map.md")), false);
     assert.equal(existsSync(path.join(plugin, "DECISIONS.md")), false);
   });
 });

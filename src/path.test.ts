@@ -12,7 +12,7 @@ const hook = path.resolve("hooks/praxis.mjs");
 function tempProject(): string {
   const directory = mkdtempSync(path.join(tmpdir(), "praxis-path-"));
   directories.push(directory);
-  mkdirSync(path.join(directory, ".learn-coach"));
+  mkdirSync(path.join(directory, ".praxis"));
   mkdirSync(path.join(directory, "src"));
   return directory;
 }
@@ -48,7 +48,7 @@ describe("student path", () => {
     const project = tempProject();
     const reason = "Only I run it this week.";
     const prediction = "The server listens on one port.";
-    writeFileSync(path.join(project, ".learn-coach", "decisions.md"), `Goal: Notes API
+    writeFileSync(path.join(project, ".praxis", "decisions.md"), `Goal: Notes API
 
 ## Decision
 Topic: How it ships
@@ -71,7 +71,7 @@ ${prediction}
   listen(3000);
 }
 `);
-    writeFileSync(path.join(project, ".learn-coach", "review.md"), `## Review
+    writeFileSync(path.join(project, ".praxis", "review.md"), `## Review
 Topic: How it ships
 Matched: yes
 ## End
@@ -79,12 +79,12 @@ Matched: yes
     run("stop", project);
 
     const decisions = readFileSync(path.join(project, "DECISIONS.md"), "utf8");
-    const report = readFileSync(path.join(project, ".learn-coach", "report.md"), "utf8");
+    const report = readFileSync(path.join(project, ".praxis", "report.md"), "utf8");
     assert.ok(decisions.includes(reason));
     assert.ok(report.includes(reason));
     assert.ok(report.includes(prediction));
     assert.match(report, /Matched: yes/);
-    assert.equal(existsSync(path.join(project, ".learn-coach", "session.json")), false);
+    assert.equal(existsSync(path.join(project, ".praxis", "session.json")), false);
     assert.equal(existsSync(path.join(project, "questions", "core.yaml")), false);
   });
 
@@ -100,7 +100,7 @@ Matched: yes
     assert.equal(projectHooks.hooks.stop[0]?.command, "node hooks/praxis.mjs stop");
 
     const project = tempProject();
-    writeFileSync(path.join(project, ".learn-coach", "decisions.md"), `Goal: Notes API
+    writeFileSync(path.join(project, ".praxis", "decisions.md"), `Goal: Notes API
 
 ## Decision
 Topic: How it ships
@@ -112,7 +112,7 @@ Reason:
 Only I run it this week.
 ## End
 `);
-    writeFileSync(path.join(project, ".learn-coach", "progress.md"), "Status: pending\nTopic: How it ships\nBypass: one-step\n");
+    writeFileSync(path.join(project, ".praxis", "progress.md"), "Status: pending\nTopic: How it ships\nBypass: one-step\n");
     const result = spawnSync("bash", ["-lc", command], {
       cwd: project,
       input: "{}",
@@ -126,6 +126,6 @@ Only I run it this week.
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(JSON.parse(result.stdout), {});
     assert.match(readFileSync(path.join(project, "DECISIONS.md"), "utf8"), /Only I run it this week\./);
-    assert.match(readFileSync(path.join(project, ".learn-coach", "progress.md"), "utf8"), /Bypass: none/);
+    assert.match(readFileSync(path.join(project, ".praxis", "progress.md"), "utf8"), /Bypass: none/);
   });
 });

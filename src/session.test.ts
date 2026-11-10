@@ -44,7 +44,7 @@ describe("session store", () => {
     const project = tempProject();
     writeSession(project, session);
     assert.deepEqual(readSession(project), session);
-    assert.equal(sessionFile(project), path.join(project, ".learn-coach", "session.json"));
+    assert.equal(sessionFile(project), path.join(project, ".praxis", "session.json"));
   });
 
   it("fills project additions when an older session omits them", () => {

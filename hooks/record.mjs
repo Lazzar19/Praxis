@@ -6,7 +6,7 @@ const SOURCE_EXT = new Set([
   ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".go", ".java", ".rs", ".rb", ".php", ".cs", ".cpp", ".c", ".h", ".swift", ".kt",
 ]);
 
-export const MAP_NOTE = "A map of the existing code is in .learn-coach/map.md. Mark anything you could not see under Unknowns before asking a new question.";
+export const MAP_NOTE = "A map of the existing code is in .praxis/map.md. Mark anything you could not see under Unknowns before asking a new question.";
 
 export function isSourcePath(filePath) {
   return SOURCE_EXT.has(path.extname(filePath).toLowerCase());
@@ -50,7 +50,7 @@ export function listCodeFiles(root) {
     }
     for (const entry of entries) {
       if (found.length > 40) return;
-      if (entry.name === "node_modules" || entry.name === "dist" || entry.name === ".git" || entry.name === ".learn-coach") continue;
+      if (entry.name === "node_modules" || entry.name === "dist" || entry.name === ".git" || entry.name === ".praxis") continue;
       const full = path.join(directory, entry.name);
       if (entry.isDirectory()) walk(full, depth + 1);
       else if (SOURCE_EXT.has(path.extname(entry.name))) {
@@ -86,7 +86,7 @@ export function ensureMap(root) {
   if (isPluginProject(root)) return "";
   const listed = listCodeFiles(root);
   if (listed.files.length === 0) return "";
-  const notes = path.join(root, ".learn-coach");
+  const notes = path.join(root, ".praxis");
   const mapPath = path.join(notes, "map.md");
   const existing = existsSync(mapPath) ? readFileSync(mapPath, "utf8") : "";
   const next = syncMap(existing, listed.files, listed.truncated);
@@ -99,7 +99,7 @@ export function ensureMap(root) {
 
 export function writeRecord(root) {
   if (isPluginProject(root)) return false;
-  const notesPath = path.join(root, ".learn-coach", "decisions.md");
+  const notesPath = path.join(root, ".praxis", "decisions.md");
   let notes;
   try {
     notes = readFileSync(notesPath, "utf8");

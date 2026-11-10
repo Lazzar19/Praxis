@@ -39,7 +39,7 @@ function rememberMarks(root) {
   const merged = mergeMarks(readMarks(root), found);
   if (merged.length === 0) return;
   mkdirNotes(root);
-  writeFileSync(path.join(root, ".learn-coach", "marks.md"), renderMarks(merged));
+  writeFileSync(path.join(root, ".praxis", "marks.md"), renderMarks(merged));
 }
 
 function publishReview(root) {
@@ -65,17 +65,17 @@ function publishReview(root) {
     const verdict = verdicts.get(mark.topic);
     if (!verdict) {
       const name = mark.functionName.length > 0 ? mark.functionName : "the marked function";
-      waiting.push(`Review ${name} in ${mark.file} against the decision "${mark.topic}". Quote the choice, the reason, and the prediction. Say whether the result matched their sentence. Record it in .learn-coach/review.md as Matched: yes or Matched: no. Do not rewrite the function.`);
+      waiting.push(`Review ${name} in ${mark.file} against the decision "${mark.topic}". Quote the choice, the reason, and the prediction. Say whether the result matched their sentence. Record it in .praxis/review.md as Matched: yes or Matched: no. Do not rewrite the function.`);
       continue;
     }
     sections.push(renderSection(decision, mark, verdict));
   }
   if (sections.length > 0) {
     mkdirNotes(root);
-    writeFileSync(path.join(root, ".learn-coach", "report.md"), `# Review\n\n${sections.join("\n\n")}\n`);
+    writeFileSync(path.join(root, ".praxis", "report.md"), `# Review\n\n${sections.join("\n\n")}\n`);
   }
   const published = sections.length > 0
-    ? `A review is in .learn-coach/report.md. Tell the student whether the result matched their sentence, and quote the decision and the prediction. Do not rewrite the function.\n\n${sections.join("\n\n")}`
+    ? `A review is in .praxis/report.md. Tell the student whether the result matched their sentence, and quote the decision and the prediction. Do not rewrite the function.\n\n${sections.join("\n\n")}`
     : "";
   return [published, ...waiting].filter((part) => part.length > 0).join("\n\n");
 }
@@ -130,7 +130,7 @@ function mergeMarks(previous, found) {
 function readMarks(root) {
   let text = "";
   try {
-    text = readFileSync(path.join(root, ".learn-coach", "marks.md"), "utf8");
+    text = readFileSync(path.join(root, ".praxis", "marks.md"), "utf8");
   } catch {
     return [];
   }
@@ -161,7 +161,7 @@ Function: ${mark.functionName}
 function readVerdicts(root) {
   let text = "";
   try {
-    text = readFileSync(path.join(root, ".learn-coach", "review.md"), "utf8");
+    text = readFileSync(path.join(root, ".praxis", "review.md"), "utf8");
   } catch {
     return new Map();
   }
@@ -177,7 +177,7 @@ function readVerdicts(root) {
 
 function readNotes(root) {
   try {
-    return readFileSync(path.join(root, ".learn-coach", "decisions.md"), "utf8");
+    return readFileSync(path.join(root, ".praxis", "decisions.md"), "utf8");
   } catch {
     return "";
   }
@@ -221,7 +221,7 @@ function inputPath(input) {
 }
 
 function isNotes(root, filePath) {
-  const notes = path.resolve(root, ".learn-coach");
+  const notes = path.resolve(root, ".praxis");
   const resolved = path.resolve(root, filePath);
   return resolved === notes || resolved.startsWith(`${notes}${path.sep}`);
 }
@@ -232,5 +232,5 @@ function isPluginProject(root) {
 }
 
 function mkdirNotes(root) {
-  mkdirSync(path.join(root, ".learn-coach"), { recursive: true });
+  mkdirSync(path.join(root, ".praxis"), { recursive: true });
 }

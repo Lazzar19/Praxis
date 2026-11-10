@@ -114,7 +114,7 @@ export function scaffoldTodos(options: FlowOptions): ScaffoldResult {
     version: 1 as const,
     todos: todos.map(({ questionId, file, functionName, marker }) => ({ questionId, file, functionName, marker })),
   };
-  const manifestPath = path.join(loaded.root, ".learn-coach", "todos.json");
+  const manifestPath = path.join(loaded.root, ".praxis", "todos.json");
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   return { todoCount: todos.length, written, kept };
 }
@@ -174,7 +174,7 @@ function loadExported(options: FlowOptions): { root: string; session: Session; t
 }
 
 function readManifest(root: string): z.infer<typeof manifestSchema> {
-  const file = path.join(root, ".learn-coach", "todos.json");
+  const file = path.join(root, ".praxis", "todos.json");
   let raw: string;
   try {
     raw = readFileSync(file, "utf8");

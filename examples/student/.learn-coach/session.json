@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "goal": "Notes API",
+  "levels": {
+    "stack": "intermediate",
+    "database": "intermediate",
+    "api": "intermediate",
+    "auth": "intermediate",
+    "deploy": "beginner"
+  },
+  "handsOn": "todos",
+  "answers": [],
+  "startedAt": "2026-11-08T09:41:45.883Z",
+  "exportedAt": null,
+  "levelCounts": {
+    "stack": {
+      "idk": 0,
+      "cleanPasses": 0
+    },
+    "database": {
+      "idk": 0,
+      "cleanPasses": 0
+    },
+    "api": {
+      "idk": 0,
+      "cleanPasses": 0
+    },
+    "auth": {
+      "idk": 0,
+      "cleanPasses": 0
+    },
+    "deploy": {
+      "idk": 0,
+      "cleanPasses": 0
+    }
+  },
+  "pending": null,
+  "idk": null,
+  "idkSeen": [],
+  "explainQuestionId": null,
+  "modelEnabled": true,
+  "additions": {
+    "options": [],
+    "questions": []
+  }
+}

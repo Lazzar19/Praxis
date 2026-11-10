@@ -46,12 +46,12 @@ Also ask about a decision their prompt opens that those five do not cover. Skip 
 export function sessionContext(progress) {
   if (progress.status !== "pending") return "";
   const topic = progress.topic.length > 0 ? progress.topic : "the open question";
-  return `Praxis has an open decision: ${topic}. Continue that question in this chat before writing project code. Do not ask the student to run a command. The note is .learn-coach/progress.md.`;
+  return `Praxis has an open decision: ${topic}. Continue that question in this chat before writing project code. Do not ask the student to run a command. The note is .praxis/progress.md.`;
 }
 
 export function openFloor(root, progress) {
   if (isPluginProject(root) || progress.status === "pending" || progress.status === "confirmed") return "";
-  mkdirSync(path.join(root, ".learn-coach"), { recursive: true });
+  mkdirSync(path.join(root, ".praxis"), { recursive: true });
   writeFileSync(progressFile(root), "Status: pending\nTopic: the floor\nBypass: none\n");
   return FIRST_REPLY;
 }
@@ -64,7 +64,7 @@ export function gateEdit(progress, filePath, root) {
   return {
     permission: "deny",
     user_message: `Praxis is waiting on an open decision: ${topic}.`,
-    agent_message: `Do not edit project files until the student confirms "${topic}". You may update .learn-coach/progress.md. Set Bypass to one-step only when they asked to do just this step without questions. That bypass covers one step.`,
+    agent_message: `Do not edit project files until the student confirms "${topic}". You may update .praxis/progress.md. Set Bypass to one-step only when they asked to do just this step without questions. That bypass covers one step.`,
   };
 }
 
@@ -84,13 +84,13 @@ export function editPath(input) {
 
 function isNotesFile(filePath, root) {
   if (filePath.length === 0) return false;
-  const notes = path.resolve(root, ".learn-coach");
+  const notes = path.resolve(root, ".praxis");
   const resolved = path.resolve(root, filePath);
   return resolved === notes || resolved.startsWith(notes + path.sep);
 }
 
 function progressFile(root) {
-  return path.join(root, ".learn-coach", "progress.md");
+  return path.join(root, ".praxis", "progress.md");
 }
 
 function readProgress(root) {

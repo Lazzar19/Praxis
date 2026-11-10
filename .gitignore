@@ -2,10 +2,11 @@ node_modules/
 dist/
 .venv/
 __pycache__/
-.learn-coach/
+.praxis/
 .env
-examples/student/.learn-coach/
+examples/student/.praxis/
 examples/student/DECISIONS.md
 examples/student/PLAN.md
 
 PLAN.md
+future-features.md

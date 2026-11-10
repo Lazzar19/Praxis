@@ -38,7 +38,7 @@ From the first description of a product, the student meets enough explained deci
 | 13 | When code may be written | After they confirm that step | Confirmation covers the step that was explained |
 | 14 | Prediction | Before the confirmed step is written, one sentence about what they expect the code to do. The report afterwards compares that sentence with the result | They meet the code as a check of their own guess |
 | 15 | Their hands | One marked function per confirmed step, for them to write. A review quotes the decision that required it | Reading a diff is weaker practice than writing one piece |
-| 16 | Record | `DECISIONS.md` in the project, in their words, plus `.learn-coach/` notes so a new chat can continue | The file is for the student. The notes are for the model |
+| 16 | Record | `DECISIONS.md` in the project, in their words, plus `.praxis/` notes so a new chat can continue | The file is for the student. The notes are for the model |
 | 17 | Hard gate | A hook refuses file edits while a decision is still open | A rule can be skipped. A hook cannot |
 | 18 | Resume | A session-start hook reloads the notes | A new chat must not forget an open decision |
 | 19 | Level | Changes how much is explained, not who decides | Beginner means more grounding. Advanced means harder assumptions |
@@ -62,7 +62,7 @@ From the first description of a product, the student meets enough explained deci
 4. The student answers in their own words. A reason that describes another option gets one more explanation and one more try.
 5. They confirm the step. Before code, they say what they expect it to do.
 6. The model writes that step and leaves one marked function. The student writes the function. The review quotes the decision.
-7. `DECISIONS.md` gains one entry in their words. `.learn-coach/` keeps the open topic so the next chat continues.
+7. `DECISIONS.md` gains one entry in their words. `.praxis/` keeps the open topic so the next chat continues.
 
 ---
 
@@ -78,7 +78,7 @@ Done when a test reads the shipping rule and finds each of those obligations, an
 
 ### Slice 2 — the gate and the memory
 
-A session-start hook reloads `.learn-coach/` notes. A hook refuses file edits while a decision is open. "Just this step" is the only bypass, and it covers one step.
+A session-start hook reloads `.praxis/` notes. A hook refuses file edits while a decision is open. "Just this step" is the only bypass, and it covers one step.
 
 Done when a pending decision denies a file edit, a confirmed step allows it, and a new session is told about the open decision without a command.
 
@@ -113,4 +113,4 @@ Done when a student project can finish a session without the card and without th
 - `rules/praxis.mdc` — the interview, slice 1
 - `.cursor/hooks.json` — the gate and the memory, slice 2
 - `templates/` — `DECISIONS.md`, slice 3
-- `.learn-coach/` in the student project — notes, not the plugin source
+- `.praxis/` in the student project — notes, not the plugin source

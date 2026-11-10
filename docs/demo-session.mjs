@@ -79,7 +79,7 @@ process.on("SIGINT", () => {
 });
 
 try {
-  mkdirSync(path.join(project, ".learn-coach"), { recursive: true });
+  mkdirSync(path.join(project, ".praxis"), { recursive: true });
   mkdirSync(path.join(project, "src"), { recursive: true });
   writeFileSync(
     path.join(project, "src", "db.ts"),
@@ -97,10 +97,10 @@ try {
   if (!ctx1.includes("map.md")) fail("session missing map note");
   console.log("stdout JSON keys:", Object.keys(session1).join(", "));
   console.log(trimBlock(ctx1));
-  if (!existsSync(path.join(project, ".learn-coach", "map.md"))) {
+  if (!existsSync(path.join(project, ".praxis", "map.md"))) {
     fail("map.md was not written");
   }
-  if (!existsSync(path.join(project, ".learn-coach", "progress.md"))) {
+  if (!existsSync(path.join(project, ".praxis", "progress.md"))) {
     fail("progress.md was not written for floor");
   }
 
@@ -134,9 +134,9 @@ Prediction:
 ${prediction}
 ## End
 `;
-  writeFileSync(path.join(project, ".learn-coach", "decisions.md"), decisionsBody);
+  writeFileSync(path.join(project, ".praxis", "decisions.md"), decisionsBody);
   writeFileSync(
-    path.join(project, ".learn-coach", "progress.md"),
+    path.join(project, ".praxis", "progress.md"),
     `Status: confirmed\nTopic: ${TOPIC}\nBypass: none\n`,
   );
   writeFileSync(
@@ -146,7 +146,7 @@ ${prediction}
 }
 `,
   );
-  console.log("Wrote .learn-coach/decisions.md block and src/expenses.ts stub");
+  console.log("Wrote .praxis/decisions.md block and src/expenses.ts stub");
   console.log(trimBlock(decisionsBody, 20));
 
   section("4 stop (export DECISIONS.md + scan marks)");
@@ -156,11 +156,11 @@ ${prediction}
   if (!decisionsMd.includes(reason)) fail("DECISIONS.md missing reason");
   if (!decisionsMd.includes(prediction)) fail("DECISIONS.md missing prediction");
   console.log(trimBlock(decisionsMd));
-  if (!existsSync(path.join(project, ".learn-coach", "marks.md"))) {
+  if (!existsSync(path.join(project, ".praxis", "marks.md"))) {
     fail("marks.md missing after stop");
   }
-  console.log("\n.learn-coach/marks.md:");
-  console.log(trimBlock(readFileSync(path.join(project, ".learn-coach", "marks.md"), "utf8"), 16));
+  console.log("\n.praxis/marks.md:");
+  console.log(trimBlock(readFileSync(path.join(project, ".praxis", "marks.md"), "utf8"), 16));
 
   section("5 gate StrReplace (agent removes marker → deny)");
   const denyMark = runHook("gate", project, {
@@ -184,7 +184,7 @@ ${prediction}
 `,
   );
   writeFileSync(
-    path.join(project, ".learn-coach", "review.md"),
+    path.join(project, ".praxis", "review.md"),
     `## Review
 Topic: ${TOPIC}
 Matched: yes
@@ -193,10 +193,10 @@ Matched: yes
   );
   runHook("stop", project, {});
 
-  if (!existsSync(path.join(project, ".learn-coach", "report.md"))) {
+  if (!existsSync(path.join(project, ".praxis", "report.md"))) {
     fail("report.md missing after review");
   }
-  const report = readFileSync(path.join(project, ".learn-coach", "report.md"), "utf8");
+  const report = readFileSync(path.join(project, ".praxis", "report.md"), "utf8");
   if (!report.includes("Matched: yes")) fail("report missing verdict");
   if (!report.includes(prediction)) fail("report missing prediction");
   console.log(trimBlock(report));
@@ -204,12 +204,12 @@ Matched: yes
   section("7 Files produced");
   const rel = (p) => path.relative(project, p).split(path.sep).join("/");
   for (const f of [
-    ".learn-coach/progress.md",
-    ".learn-coach/decisions.md",
-    ".learn-coach/map.md",
-    ".learn-coach/marks.md",
-    ".learn-coach/review.md",
-    ".learn-coach/report.md",
+    ".praxis/progress.md",
+    ".praxis/decisions.md",
+    ".praxis/map.md",
+    ".praxis/marks.md",
+    ".praxis/review.md",
+    ".praxis/report.md",
     "DECISIONS.md",
     "src/expenses.ts",
   ]) {

@@ -14,7 +14,7 @@ const reason = "  One file is enough.  ";
 function tempProject(): string {
   const directory = mkdtempSync(path.join(tmpdir(), "praxis-review-"));
   directories.push(directory);
-  mkdirSync(path.join(directory, ".learn-coach"));
+  mkdirSync(path.join(directory, ".praxis"));
   mkdirSync(path.join(directory, "src"));
   return directory;
 }
@@ -30,7 +30,7 @@ function run(command: string, project: string, input: unknown = {}): unknown {
 }
 
 function writeDecision(project: string): void {
-  writeFileSync(path.join(project, ".learn-coach", "decisions.md"), `Goal: Notes API
+  writeFileSync(path.join(project, ".praxis", "decisions.md"), `Goal: Notes API
 
 ## Decision
 Topic: Where the data lives
@@ -44,7 +44,7 @@ Prediction:
 ${prediction}
 ## End
 `);
-  writeFileSync(path.join(project, ".learn-coach", "progress.md"), "Status: confirmed\nTopic: Where the data lives\nBypass: none\n");
+  writeFileSync(path.join(project, ".praxis", "progress.md"), "Status: confirmed\nTopic: Where the data lives\nBypass: none\n");
 }
 
 function writeStub(project: string): void {
@@ -69,8 +69,8 @@ describe("prediction and review", () => {
     const decisions = readFileSync(path.join(project, "DECISIONS.md"), "utf8");
     assert.ok(decisions.includes(reason));
     assert.ok(decisions.includes(prediction));
-    assert.equal(parseDecisions(readFileSync(path.join(project, ".learn-coach", "decisions.md"), "utf8")).decisions[0]?.prediction, prediction);
-    assert.match(readFileSync(path.join(project, ".learn-coach", "marks.md"), "utf8"), /Function: saveNote/);
+    assert.equal(parseDecisions(readFileSync(path.join(project, ".praxis", "decisions.md"), "utf8")).decisions[0]?.prediction, prediction);
+    assert.match(readFileSync(path.join(project, ".praxis", "marks.md"), "utf8"), /Function: saveNote/);
 
     const denied = run("gate", project, {
       tool_name: "StrReplace",
@@ -106,34 +106,34 @@ describe("prediction and review", () => {
 `);
     const waiting = run("session", project) as { additional_context?: string };
     assert.match(waiting.additional_context ?? "", /whether the result matched their sentence/);
-    assert.equal(existsSync(path.join(project, ".learn-coach", "report.md")), false);
+    assert.equal(existsSync(path.join(project, ".praxis", "report.md")), false);
 
-    writeFileSync(path.join(project, ".learn-coach", "review.md"), `## Review
+    writeFileSync(path.join(project, ".praxis", "review.md"), `## Review
 Topic: Where the data lives
 Matched: yes
 ## End
 `);
     run("stop", project);
-    const report = readFileSync(path.join(project, ".learn-coach", "report.md"), "utf8");
+    const report = readFileSync(path.join(project, ".praxis", "report.md"), "utf8");
     assert.ok(report.includes(reason));
     assert.ok(report.includes(prediction));
     assert.match(report, /Choice: one file/);
     assert.match(report, /Function: saveNote in src\/store\.ts/);
     assert.match(report, /Matched: yes/);
 
-    writeFileSync(path.join(project, ".learn-coach", "review.md"), `## Review
+    writeFileSync(path.join(project, ".praxis", "review.md"), `## Review
 Topic: Where the data lives
 Matched: no
 ## End
 `);
     run("stop", project);
-    assert.match(readFileSync(path.join(project, ".learn-coach", "report.md"), "utf8"), /Matched: no/);
-    assert.ok(readFileSync(path.join(project, ".learn-coach", "report.md"), "utf8").includes(prediction));
+    assert.match(readFileSync(path.join(project, ".praxis", "report.md"), "utf8"), /Matched: no/);
+    assert.ok(readFileSync(path.join(project, ".praxis", "report.md"), "utf8").includes(prediction));
   });
 
   it("allows a document to mention the mark", () => {
     const project = tempProject();
-    writeFileSync(path.join(project, ".learn-coach", "progress.md"), "Status: confirmed\nTopic: The stack\nBypass: none\n");
+    writeFileSync(path.join(project, ".praxis", "progress.md"), "Status: confirmed\nTopic: The stack\nBypass: none\n");
     writeFileSync(path.join(project, "README.md"), "The mark looks like TODO(praxis:...).\n");
     const allowed = run("gate", project, {
       tool_name: "Write",
@@ -149,12 +149,12 @@ Matched: no
     const project = tempProject();
     writeDecision(project);
     writeStub(project);
-    writeFileSync(path.join(project, ".learn-coach", "review.md"), `## Review
+    writeFileSync(path.join(project, ".praxis", "review.md"), `## Review
 Topic: Where the data lives
 Matched: yes
 ## End
 `);
     run("stop", project);
-    assert.equal(existsSync(path.join(project, ".learn-coach", "report.md")), false);
+    assert.equal(existsSync(path.join(project, ".praxis", "report.md")), false);
   });
 });

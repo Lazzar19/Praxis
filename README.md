@@ -27,7 +27,7 @@ Family expense tracker — shapes match [`rules/praxis.mdc`](rules/praxis.mdc); 
 | 5 | Student | "It saves a new expense and returns its generated id." |
 | 6 | Agent | Writes scaffolding and leaves `saveExpense` with `TODO(praxis:Where the data lives)` in the body. **Do not ask Praxis to remove or implement the marked function.** The marker is the boundary between generated scaffolding and the student's implementation. |
 | 7 | Student | Implements `saveExpense` in the editor. |
-| 8 | Agent | Reviews against the prediction; records `Matched: yes` or `no` in `.learn-coach/review.md`. |
+| 8 | Agent | Reviews against the prediction; records `Matched: yes` or `no` in `.praxis/review.md`. |
 
 The **topic string inside the marker** must match the decision block's `Topic:` line (`Where the data lives` in the hook demo below).
 
@@ -39,7 +39,7 @@ Reproduce from the plugin root:
 node docs/demo-session.mjs
 ```
 
-The script creates a throwaway project under `/tmp`, drives `session`, `gate`, and `stop` with the same stdin JSON shapes as the tests, checks results, and cleans up. In a real session, **`Matched: yes` / `no` in `.learn-coach/review.md` is written by the model** ([`rules/praxis.mdc`](rules/praxis.mdc)); hooks only **read** `review.md` and may generate `.learn-coach/report.md` on `stop` / `session`. The demo driver **simulates** the model by writing `review.md` before the final `stop` — that step is not a hook.
+The script creates a throwaway project under `/tmp`, drives `session`, `gate`, and `stop` with the same stdin JSON shapes as the tests, checks results, and cleans up. In a real session, **`Matched: yes` / `no` in `.praxis/review.md` is written by the model** ([`rules/praxis.mdc`](rules/praxis.mdc)); hooks only **read** `review.md` and may generate `.praxis/report.md` on `stop` / `session`. The demo driver **simulates** the model by writing `review.md` before the final `stop` — that step is not a hook.
 
 Full stdout from one run is in [`docs/demo-run.txt`](docs/demo-run.txt) (paths under `/tmp/…` vary per run).
 
@@ -50,7 +50,7 @@ Trimmed excerpts (from a real run; `…` omits repeated floor guidance):
 stdout JSON keys: additional_context
 ...
 Praxis has an open decision: the floor. Continue that question in this chat before writing project code.
-A map of the existing code is in .learn-coach/map.md.
+A map of the existing code is in .praxis/map.md.
 
 === 2 gate Write (Status: pending) ===
 {"permission":"deny","user_message":"Praxis is waiting on an open decision: the floor.",...}
@@ -117,7 +117,7 @@ robocopy $Source $Dest /MIR /XD node_modules .git dist
 
 **Praxis does not run in this source repo.** Hooks detect `.cursor-plugin/plugin.json` plus `rules/praxis.mdc` and skip student map/export behavior here.
 
-**Reset a session:** in the student project, delete `.learn-coach/`, optionally `DECISIONS.md`, then open a **new** Agent chat. Hooks do not delete stale `DECISIONS.md` when notes are gone.
+**Reset a session:** in the student project, delete `.praxis/`, optionally `DECISIONS.md`, then open a **new** Agent chat. Hooks do not delete stale `DECISIONS.md` when notes are gone.
 
 ## What the student meets
 
@@ -127,7 +127,7 @@ Reasons are stored verbatim, with one retry if the reason fits another option.
 
 **Skips:** named small edits; **one-step bypass** for a single step without questions (resets on stop).
 
-Existing code triggers a map under `.learn-coach/map.md` before new questions (see [How it works](#how-it-works)).
+Existing code triggers a map under `.praxis/map.md` before new questions (see [How it works](#how-it-works)).
 
 After confirmation: one prediction sentence, then code with one `TODO(praxis:<topic>)` function for the student. Review compares the implementation to the prediction.
 
@@ -135,14 +135,14 @@ After confirmation: one prediction sentence, then code with one `TODO(praxis:<to
 
 1. Student opens a **new** Agent chat and asks to build or change something substantial.
 2. **sessionStart** hook runs: may open the floor (`Status: pending`), inject resume context, sync **map**, export **DECISIONS.md** if notes exist, scan **marks** / **report**.
-3. Model uses **AskQuestion** for floor topics and follow-ons (rule); appends confirmed blocks to `.learn-coach/decisions.md`.
+3. Model uses **AskQuestion** for floor topics and follow-ons (rule); appends confirmed blocks to `.praxis/decisions.md`.
 4. While **`Status: pending`**, **preToolUse** denies project file edits (notes and one-step bypass excepted).
 5. Student confirms a step; model records **Prediction** and sets progress to **`confirmed`** when appropriate.
 6. Model writes the step and leaves the **TODO(praxis:…)** marker in one function.
 7. **preToolUse** denies edits that drop marker substrings until the student implements.
 8. Student implements the function (marker gone).
-9. Model writes `.learn-coach/review.md` (`Matched: yes` | `no`); **stop** / **session** may refresh `.learn-coach/report.md` and root **DECISIONS.md**.
-10. Next build request or chat continues from `.learn-coach/progress.md` and notes.
+9. Model writes `.praxis/review.md` (`Matched: yes` | `no`); **stop** / **session** may refresh `.praxis/report.md` and root **DECISIONS.md**.
+10. Next build request or chat continues from `.praxis/progress.md` and notes.
 
 ```mermaid
 flowchart LR
@@ -169,7 +169,7 @@ student-project/
 
 ```text
 student-project/
-├── .learn-coach/
+├── .praxis/
 │   ├── progress.md    # Status: pending, floor topic
 │   └── map.md         # Parts + Unknowns from listCodeFiles
 └── src/db.ts
@@ -179,7 +179,7 @@ student-project/
 
 ```text
 student-project/
-├── .learn-coach/
+├── .praxis/
 │   ├── progress.md    # often Status: confirmed
 │   ├── decisions.md   # operational source of truth (append blocks)
 │   ├── map.md
@@ -194,7 +194,7 @@ student-project/
 
 ```text
 student-project/
-├── .learn-coach/
+├── .praxis/
 │   ├── …              # progress, decisions, map, marks
 │   ├── review.md      # Matched: yes|no — **model-written** (driver fakes this in the demo)
 │   └── report.md      # **hook-generated** on stop from review.md + decisions
@@ -202,7 +202,7 @@ student-project/
 └── src/expenses.ts    # marker removed — student implementation
 ```
 
-Manual edits under `.learn-coach/` change what the **session** hook injects on the next chat (open `Topic`, `Bypass`, etc.). While `Status: pending`, edits outside `.learn-coach/` are refused except during `Bypass: one-step`.
+Manual edits under `.praxis/` change what the **session** hook injects on the next chat (open `Topic`, `Bypass`, etc.). While `Status: pending`, edits outside `.praxis/` are refused except during `Bypass: one-step`.
 
 ## Troubleshooting
 
@@ -210,12 +210,12 @@ Manual edits under `.learn-coach/` change what the **session** hook injects on t
 |---|---|
 | No AskQuestion | Praxis enabled? **Reload Window**? Student project (not plugin repo)? **New** Agent chat? |
 | Stale chat after reload | Chats started before reload — open a **new** Agent chat |
-| Edit denied (`pending`) | Finish or confirm open topic in `.learn-coach/progress.md`, or valid one-step bypass |
+| Edit denied (`pending`) | Finish or confirm open topic in `.praxis/progress.md`, or valid one-step bypass |
 | Leftover pending | [Reset a session](#try-praxis-as-a-student) |
 | Plugin not loaded | `plugin.json` directly under `local/praxis/`, not nested `Praxis/` |
 | Marker edit denied | Agent must not remove `TODO(praxis:…)`; student implements |
 | Map duplicated paths | [Map behavior](#map-behavior) until Parts lines have descriptions |
-| `DECISIONS.md` stale | Trigger **stop** / **session**; need `.learn-coach/decisions.md` blocks |
+| `DECISIONS.md` stale | Trigger **stop** / **session**; need `.praxis/decisions.md` blocks |
 | Plugin changes ignored | Re-copy to `local/praxis` and reload |
 | Hooks inactive | `node` on PATH for `hooks/hooks.json`; if missing, hooks do not run (undefined UI here) |
 
@@ -228,13 +228,13 @@ Manual edits under `.learn-coach/` change what the **session** hook injects on t
 | Record | [`hooks/record.mjs`](hooks/record.mjs) | `syncMap`, `DECISIONS.md` from notes |
 | Review | [`hooks/review.mjs`](hooks/review.mjs) | Marker guard, `marks.md`, `report.md` |
 
-**Gate:** `Status: pending` blocks project edits; `.learn-coach/` allowed; `Bypass: one-step` allows one step; `confirmed` or empty progress does not block ([`gateEdit`](hooks/praxis.mjs)).
+**Gate:** `Status: pending` blocks project edits; `.praxis/` allowed; `Bypass: one-step` allows one step; `confirmed` or empty progress does not block ([`gateEdit`](hooks/praxis.mjs)).
 
 **Marker:** substring `TODO(praxis:([^)]+))` — topic may include spaces, not `)`. [`protectMarkedEdit`](hooks/review.mjs) denies edits that remove any marker substring (see [`src/review.test.ts`](src/review.test.ts)). **Do not ask the agent to remove or implement the marked function** — that is the student's step.
 
 ### Map behavior
 
-[`syncMap()`](hooks/record.mjs) adds each scanned file as bare `- path` under **Parts** and also under **Unknowns** until Parts has a description line (rule text differs; hook behavior is what tests assert). **Limits:** depth 12, max 40 files; skips `node_modules`, `dist`, `.git`, `.learn-coach`; extensions listed in `record.mjs`. No map without matching sources or in the plugin repo.
+[`syncMap()`](hooks/record.mjs) adds each scanned file as bare `- path` under **Parts** and also under **Unknowns** until Parts has a description line (rule text differs; hook behavior is what tests assert). **Limits:** depth 12, max 40 files; skips `node_modules`, `dist`, `.git`, `.praxis`; extensions listed in `record.mjs`. No map without matching sources or in the plugin repo.
 
 ## Known limitations
 

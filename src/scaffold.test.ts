@@ -107,7 +107,7 @@ describe("TODO scaffold", () => {
     exportDecisions(options);
     assert.throws(() => scaffoldTodos(options), /Full generation is not available/);
     assert.equal(existsSync(path.join(project, "src")), false);
-    assert.equal(existsSync(path.join(project, ".learn-coach", "todos.json")), false);
+    assert.equal(existsSync(path.join(project, ".praxis", "todos.json")), false);
 
     const tree = loadCoreTree();
     const answeredAt = "2026-11-07T19:00:00.000Z";
@@ -143,7 +143,7 @@ describe("TODO scaffold", () => {
     for (const answer of core) recordAnswer(options, answer);
     exportDecisions(options);
     scaffoldTodos(options);
-    writeFileSync(path.join(project, ".learn-coach", "todos.json"), `${JSON.stringify({
+    writeFileSync(path.join(project, ".praxis", "todos.json"), `${JSON.stringify({
       version: 1,
       todos: [{ questionId: "stack", file: "../secrets.txt", functionName: "implementStack", marker: "TODO(learn-coach:stack)" }],
     }, null, 2)}\n`);

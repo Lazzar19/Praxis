@@ -37,7 +37,7 @@ describe("shipping interview rule", () => {
     assert.match(rule, /review the function against the decision/);
     assert.match(rule, /whether the result matched their sentence/);
     assert.match(rule, /DECISIONS\.md/);
-    assert.match(rule, /\.learn-coach\/progress\.md/);
+    assert.match(rule, /\.praxis\/progress\.md/);
     assert.doesNotMatch(rule, /\/praxis|\/vibe-wise|slash command/i);
   });
 });
