@@ -1,6 +1,6 @@
 # Praxis
 
-A Cursor plugin that teaches in the chat you already have open. Describe what you want to build. The first reply asks every floor decision and explains each option before you choose.
+A Cursor plugin that teaches in the chat you already have open. Describe what you want to build. Praxis asks with Cursor's question control, one question at a time, and the options come from what you wrote.
 
 Status: slice 5 of the new [PLAN.md](PLAN.md). The chat is the whole session. A confirmed step stores your sentence about what the code will do, leaves one marked function for you to write, and the review quotes the decision and that sentence. There is no setup command.
 
@@ -17,7 +17,7 @@ Enable the plugin on the student project. The interview starts in the chat they 
 
 ## Chat
 
-A short request still gets every floor topic in the first reply: your level, the stack, where data lives, who may see or change it, and how it ships. Each option is explained for this project. Your wording is what gets stored. A small edit, or one sentence that this step should skip questions, does not open the whole interview.
+A short request still gets a question for your level, the stack, where data lives, who may see or change it, and how it ships. Each question is about this project, and you select an option. Your wording is what gets stored. A small edit, or one sentence that this step should skip questions, does not open the whole interview.
 
 While a decision is open, edits outside `.learn-coach/` are refused. Asking to do just this step allows that one step, and the next edit waits again. A new chat is told about the open decision.
 

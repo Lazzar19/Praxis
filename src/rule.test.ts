@@ -20,6 +20,9 @@ describe("shipping interview rule", () => {
       assert.ok(rule.includes(topic), topic);
     }
     assert.match(rule, /One answer does not close two topics/);
+    assert.match(rule, /AskQuestion tool/);
+    assert.match(rule, /Do not ask in plain text/);
+    assert.match(rule, /There is no fixed list of answers/);
   });
 
   it("explains the choice, keeps their words, and records the result", () => {

@@ -136,7 +136,7 @@ describe("decision record", () => {
     writeFileSync(path.join(readmeOnly, "README.md"), "# Notes\n");
     const opened = run("session", readmeOnly);
     const openedContext = (opened.parsed as { additional_context?: string }).additional_context ?? "";
-    assert.match(openedContext, /first reply/);
+    assert.match(openedContext, /AskQuestion/);
     assert.equal(existsSync(path.join(readmeOnly, ".learn-coach", "map.md")), false);
 
     const plugin = tempProject();

@@ -23,17 +23,17 @@ From the first description of a product, the student meets enough explained deci
 
 | # | Topic | Choice | Why |
 |---|---|---|---|
-| 1 | Where learning happens | This chat | The student already writes here. A card is a second place to ignore |
+| 1 | Where learning happens | Cursor's AskQuestion control in this chat | The student selects an option. A separate card is a second place to ignore |
 | 2 | How it starts | An always-on rule. No command | Installing the plugin is the only setup |
 | 3 | What starts the interview | A request to build a product, add a feature, or change how it works | A named small edit is not an architecture lesson |
 | 4 | One step without questions | The sentence that this step should be done without questions | Learning returns on the next build request |
-| 5 | Who writes the questions | The model, from the student's prompt | The lesson has to be about their project |
+| 5 | Who writes the questions | The model, from the student's prompt, through AskQuestion | The lesson has to be about their project. The answers are not a fixed list |
 | 6 | Floor | Level, stack, where data lives, who may see or change it, how it ships | A vague prompt still teaches these five in the first reply |
 | 7 | Extra decisions | Anything the prompt opens that the floor does not cover | The floor is a minimum, not the whole conversation |
 | 8 | Shape of a question | What this decision changes here, then each option: what it is, when to choose it, what is given up | A bare list of names is a blind pick |
 | 9 | Recommendation | A suggestion, after the explanations | The student still chooses |
 | 10 | Their words | Choice and reason stored verbatim. One fresh explanation and one retry if the reason describes another option. The second reason is kept | The record is theirs |
-| 11 | Pace | The first reply asks every floor topic | A short prompt used to collapse into one or two questions |
+| 11 | Pace | One AskQuestion call, then wait | The next question can follow the answer they just selected |
 | 12 | Existing code | A short map of the parts involved, with unknowns marked, then questions only about the part they are changing | Do not re-decide the whole repository |
 | 13 | When code may be written | After they confirm that step | Confirmation covers the step that was explained |
 | 14 | Prediction | Before the confirmed step is written, one sentence about what they expect the code to do. The report afterwards compares that sentence with the result | They meet the code as a check of their own guess |
@@ -58,7 +58,7 @@ From the first description of a product, the student meets enough explained deci
 
 1. The student describes the product in ordinary language. There is no setup command.
 2. If the repository already has code, the model writes a short map and marks what it could not see.
-3. The first reply asks the floor, each topic on its own, plus any decision the prompt opens. Each question explains the options for this project.
+3. The model calls AskQuestion once, waits, then calls it again. The questions and options come from the student's prompt. The floor is the minimum, plus any decision the prompt opens. Each question explains the options for this project.
 4. The student answers in their own words. A reason that describes another option gets one more explanation and one more try.
 5. They confirm the step. Before code, they say what they expect it to do.
 6. The model writes that step and leaves one marked function. The student writes the function. The review quotes the decision.

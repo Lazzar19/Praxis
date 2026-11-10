@@ -71,8 +71,10 @@ describe("edit gate", () => {
     for (const topic of ["Their level", "The stack", "Where the data lives", "Who may see or change it", "How it ships"]) {
       assert.ok(context.includes(topic), topic);
     }
-    assert.match(context, /first reply/);
+    assert.match(context, /AskQuestion/);
+    assert.match(context, /one question/);
     assert.match(context, /before any project code/);
+    assert.match(context, /no fixed list of answers/);
     assert.match(context, /Do not ask the student to run a command/);
     assert.match(readFileSync(path.join(project, ".learn-coach", "progress.md"), "utf8"), /Status: pending/);
     const denied = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts", contents: "export const started = true;\n" }, cwd: project });

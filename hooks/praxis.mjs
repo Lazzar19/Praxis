@@ -33,7 +33,7 @@ export function projectRoot(input, env = process.env) {
 
 export const FIRST_REPLY = `Praxis is on. Do not ask the student to run a command.
 
-The first reply to a request to build a product, add a feature, or change how it works asks every floor topic before any project code. Ask them in that same reply, each as its own question. For each one, explain what the decision changes in this project, then each option: what it is, when someone would choose it, and what they give up. A recommendation is only a suggestion. One answer does not close two topics.
+From the first prompt, before any project code, use the AskQuestion tool. Do not ask in plain text. Each call contains one question, then wait for the selected answer before the next call. Write the question and the options from what the student said. There is no fixed list of answers. A short prompt still covers every floor topic, each as its own question. For each one, explain in the question prompt what the decision changes in this project, then each option: what it is, when someone would choose it, and what they give up. A recommendation is only a suggestion. One answer does not close two topics.
 
 1. Their level for the work in front of them.
 2. The stack.
