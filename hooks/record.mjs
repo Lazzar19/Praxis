@@ -8,6 +8,10 @@ const SOURCE_EXT = new Set([
 
 export const MAP_NOTE = "A map of the existing code is in .learn-coach/map.md. Mark anything you could not see under Unknowns before asking a new question.";
 
+export function isSourcePath(filePath) {
+  return SOURCE_EXT.has(path.extname(filePath).toLowerCase());
+}
+
 export function parseDecisions(text) {
   const goalMatch = /^Goal:\s*(.*)$/m.exec(text);
   const blocks = text.split(/^## Decision[ \t]*$/m).slice(1);

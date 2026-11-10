@@ -1,12 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { listCodeFiles, parseDecisions } from "./record.mjs";
+import { isSourcePath, listCodeFiles, parseDecisions } from "./record.mjs";
 
 const MARKER = /TODO\(praxis:([^)]+)\)/g;
 
 export function protectMarkedEdit(root, input) {
   const filePath = inputPath(input);
-  if (filePath.length === 0 || isNotes(root, filePath)) return { permission: "allow" };
+  if (filePath.length === 0 || isNotes(root, filePath) || !isSourcePath(filePath)) return { permission: "allow" };
   const absolute = path.resolve(root, filePath);
   let current = "";
   try {

@@ -131,6 +131,20 @@ Matched: no
     assert.ok(readFileSync(path.join(project, ".learn-coach", "report.md"), "utf8").includes(prediction));
   });
 
+  it("allows a document to mention the mark", () => {
+    const project = tempProject();
+    writeFileSync(path.join(project, ".learn-coach", "progress.md"), "Status: confirmed\nTopic: The stack\nBypass: none\n");
+    writeFileSync(path.join(project, "README.md"), "The mark looks like TODO(praxis:...).\n");
+    const allowed = run("gate", project, {
+      tool_name: "Write",
+      tool_input: {
+        path: "README.md",
+        contents: "The student writes the function marked TODO(praxis:<topic>).\n",
+      },
+    }) as { permission: string };
+    assert.equal(allowed.permission, "allow");
+  });
+
   it("does not call a function matched while the mark is still there", () => {
     const project = tempProject();
     writeDecision(project);
