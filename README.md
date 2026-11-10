@@ -8,40 +8,85 @@ The questions use Cursor's **AskQuestion** control. Each question is written fro
 
 Display name: **Praxis**. Package name: `learn-coach`. There is no setup command inside a student project.
 
-## What Praxis does
+## Demo
 
-On a **build request** (build a product, add a feature, or change how something works), Praxis runs an interview in chat before project code is written.
+A screen recording of a real Cursor session is not included yet. The **illustrative chat transcript** below shows the conversation, and the **captured hook run** shows what the plugin actually enforces on disk.
 
-| Mechanism | Role |
-|---|---|
-| [`rules/praxis.mdc`](rules/praxis.mdc) | Always-on rule: interview flow, floor topics, predictions, marked functions |
-| [`hooks/praxis.mjs`](hooks/praxis.mjs) | Session context, edit gate, one-step bypass |
-| [`hooks/record.mjs`](hooks/record.mjs) | Map sync, `DECISIONS.md` export from notes |
-| [`hooks/review.mjs`](hooks/review.mjs) | `TODO(praxis:…)` protection, review report |
+<!-- Owner: add a real session recording as docs/demo.gif when available. -->
 
-**Floor topics** (each its own AskQuestion call, in order): level, stack, where data lives, who may see or change it, how it ships, plus anything else the prompt opens. **Skips:** named small edits (explain, rename, format, typo fix); **one-step bypass** when the student says to do just this step without questions.
+### Illustrative chat transcript (not captured)
 
-**After confirmation:** one prediction sentence, then code for that step with one function left for the student (`TODO(praxis:<topic>)`). The model does not fill that function. A review compares the result to the decision and prediction.
+Family expense tracker — shapes match [`rules/praxis.mdc`](rules/praxis.mdc); wording is an example only.
 
-**Hard gate:** when `.learn-coach/progress.md` has `Status: pending`, hooks deny edits to project files. Edits under `.learn-coach/` stay allowed; `Bypass: one-step` allows project edits for that one step while status can stay pending ([`gateEdit`](hooks/praxis.mjs)). `Status: confirmed`, missing progress, or a blank file does not trigger this gate (a new session may still write `Status: pending` for the floor).
+| Turn | Who | Content |
+|------|-----|---------|
+| 1 | Student | "Build an expense tracker for our family." |
+| 2 | Agent (AskQuestion) | **Where the data lives** — options include SQLite file, JSON file on disk, hosted database; explains tradeoffs; recommends SQLite for structured queries on one device. |
+| 3 | Student | Chooses SQLite; reason: SQL queries and offline use for the family budget. |
+| 4 | Agent | Asks for one prediction sentence before code. |
+| 5 | Student | "It saves a new expense and returns its generated id." |
+| 6 | Agent | Writes scaffolding and leaves `saveExpense` with `TODO(praxis:Where the data lives)` in the body. **Do not ask Praxis to remove or implement the marked function.** The marker is the boundary between generated scaffolding and the student's implementation. |
+| 7 | Student | Implements `saveExpense` in the editor. |
+| 8 | Agent | Reviews against the prediction; records `Matched: yes` or `no` in `.learn-coach/review.md`. |
+
+The **topic string inside the marker** must match the decision block's `Topic:` line (`Where the data lives` in the hook demo below).
+
+### Captured hook run (real `node hooks/praxis.mjs …`)
+
+Reproduce from the plugin root:
+
+```bash
+node docs/demo-session.mjs
+```
+
+The script creates a throwaway project under `/tmp`, drives `session`, `gate`, and `stop` with the same stdin JSON shapes as the tests, checks results, and cleans up. In a real session, **`Matched: yes` / `no` in `.learn-coach/review.md` is written by the model** ([`rules/praxis.mdc`](rules/praxis.mdc)); hooks only **read** `review.md` and may generate `.learn-coach/report.md` on `stop` / `session`. The demo driver **simulates** the model by writing `review.md` before the final `stop` — that step is not a hook.
+
+Full stdout from one run is in [`docs/demo-run.txt`](docs/demo-run.txt) (paths under `/tmp/…` vary per run).
+
+Trimmed excerpts (from a real run; `…` omits repeated floor guidance):
+
+```
+=== 1 session ===
+stdout JSON keys: additional_context
+...
+Praxis has an open decision: the floor. Continue that question in this chat before writing project code.
+A map of the existing code is in .learn-coach/map.md.
+
+=== 2 gate Write (Status: pending) ===
+{"permission":"deny","user_message":"Praxis is waiting on an open decision: the floor.",...}
+
+=== 5 gate StrReplace (marker removal) ===
+{"permission":"deny","user_message":"Praxis left TODO(praxis:Where the data lives) for you to write.",...}
+
+=== 6 stop (report.md, after the driver wrote review.md and the student code) ===
+# Review
+...
+Matched: yes
+```
+
+## Example session
+
+The [Demo](#demo) table is the narrative version of the same scenario: **Where the data lives** → SQLite → prediction → marker → student code → review. The hook demo uses this stub (same pattern as [`src/review.test.ts`](src/review.test.ts)):
+
+```typescript
+export function saveExpense(): number {
+  throw new Error("TODO(praxis:Where the data lives)");
+}
+```
 
 ## Try Praxis as a student
 
-You need a **student project folder** (any workspace that is not this plugin repository). Do **not** run `npm install` in the student project; Praxis needs no Node dependencies there.
+You need a **student project folder** (any workspace that is not this plugin repository). Do **not** run `npm install` in the student project.
 
 ### Install the plugin (copy, not symlink)
 
-Cursor loads local plugins from `~/.cursor/plugins/local/<name>/`. The tree must include at least:
+Cursor loads local plugins from `~/.cursor/plugins/local/<name>/`. The tree must include [`.cursor-plugin/plugin.json`](.cursor-plugin/plugin.json), [`hooks/hooks.json`](hooks/hooks.json) with scripts under `hooks/`, and [`rules/praxis.mdc`](rules/praxis.mdc).
 
-- [`.cursor-plugin/plugin.json`](.cursor-plugin/plugin.json)
-- [`hooks/hooks.json`](hooks/hooks.json) and the hook scripts under `hooks/`
-- [`rules/praxis.mdc`](rules/praxis.mdc)
+Copy the entire [Lazzar19/Praxis](https://github.com/Lazzar19/Praxis) clone (folder name is usually `Praxis`). Do not symlink a checkout that resolves outside `local/`: [Cursor docs](https://cursor.com/docs/plugins#test-plugins-locally).
 
-Copy the **entire** [Lazzar19/Praxis](https://github.com/Lazzar19/Praxis) clone into that folder (after clone, the repo root is usually a `Praxis` directory). **Do not** symlink your git checkout into `local/` and point elsewhere: [Cursor only loads symlinks whose target resolves inside `~/.cursor/plugins/local`](https://cursor.com/docs/plugins#test-plugins-locally).
+`rsync --delete` and `robocopy /MIR` mirror into the destination and **remove extra files only under** `~/.cursor/plugins/local/praxis`, not your clone. **Prefer `robocopy /MIR` over `Copy-Item .\*` on Windows** — a plain copy would also drag `.git` and `node_modules` unless you exclude them by hand.
 
-`rsync --delete` and `robocopy /MIR` mirror the source into the destination and **remove extra files only under the destination plugin folder** (`~/.cursor/plugins/local/praxis`), not your clone.
-
-**Unix / macOS** — run from the clone root, or set `SOURCE` to an absolute path such as `/path/to/Praxis`:
+**Unix / macOS** (from clone root, or `SOURCE=/path/to/Praxis`):
 
 ```bash
 SOURCE="${SOURCE:-$PWD}"
@@ -51,202 +96,193 @@ rsync -a --delete --exclude node_modules --exclude .git --exclude dist \
   "$SOURCE/" "$DEST/"
 ```
 
-**Windows (PowerShell)** — run from the clone root, or set `$Source` to e.g. `C:\path\to\Praxis`:
+**Windows (PowerShell)** (from clone root, or `$Source = 'C:\path\to\Praxis'`):
 
 ```powershell
 $Source = if ($Source) { $Source } else { (Get-Location).Path }
 $Dest   = "$env:USERPROFILE\.cursor\plugins\local\praxis"
 New-Item -ItemType Directory -Force -Path $Dest | Out-Null
 robocopy $Source $Dest /MIR /XD node_modules .git dist
-# robocopy exit codes 0–7 mean success (including “extra files removed”).
+# exit codes 0–7 = success
 ```
 
-The manifest must live at `~/.cursor/plugins/local/praxis/.cursor-plugin/plugin.json`, not under a nested folder such as `local/praxis/Praxis/.cursor-plugin/`.
+`.cursor-plugin/plugin.json` must live at `local/praxis/.cursor-plugin/`, not `local/praxis/Praxis/.cursor-plugin/`.
 
-After you change the plugin source, copy again and reload.
+### Enable and start
 
-### Enable and start a session
+1. **Developer: Reload Window**
+2. **Customize** → enable **Praxis** (account-level, not per folder)
+3. Open a **different** project and a **new** Agent chat
+4. Ask to build something; expect AskQuestion, not a plain-text quiz
 
-1. Run **Developer: Reload Window** so Cursor picks up the copy.
-2. Open **Customize** and enable **Praxis** if it appears in the plugin list. That toggle is for your Cursor account, not per workspace folder.
-3. Open a **different** project (not this plugin repo) and start a **new Agent** chat.
-4. Ask to build something. The interview should begin with AskQuestion (not plain-text quizzing).
+**Praxis does not run in this source repo.** Hooks detect `.cursor-plugin/plugin.json` plus `rules/praxis.mdc` and skip student map/export behavior here.
 
-**Praxis does not run in its own source repository.** Hooks detect this repo via `.cursor-plugin/plugin.json` plus `rules/praxis.mdc` and skip map export, `DECISIONS.md` generation, and student session behavior here. Use another folder to try a session.
+**Reset a session:** in the student project, delete `.learn-coach/`, optionally `DECISIONS.md`, then open a **new** Agent chat. Hooks do not delete stale `DECISIONS.md` when notes are gone.
 
 ## What the student meets
 
-A build request opens the interview. Even a short prompt still covers all five floor topics, each as its own question, plus any extra decisions the prompt opens. One answer does not close two topics. Each question explains what the decision changes in this project, then each option: what it is, when to choose it, and what you give up.
+Build requests start the interview: all five floor topics (level, stack, where data lives, who may see or change it, how it ships), each as its own AskQuestion, plus extras the prompt opens. One answer does not close two topics. Options are explained in terms of this project.
 
-Choice and reason are stored verbatim. If the reason fits a different option, that option is explained once more and they answer again; the second reason is kept.
+Reasons are stored verbatim, with one retry if the reason fits another option.
 
-If the repo already has source files, a map is maintained in `.learn-coach/map.md` before new questions (see [Map behavior](#map-behavior) below).
+**Skips:** named small edits; **one-step bypass** for a single step without questions (resets on stop).
 
-Before a confirmed step is written, they give one sentence on what they expect the code to do. The step includes one function marked `TODO(praxis:<topic>)`. They implement it. Review quotes the decision and prediction and records whether the result matched.
+Existing code triggers a map under `.learn-coach/map.md` before new questions (see [How it works](#how-it-works)).
 
-### When questions stay closed
-
-- Named small edit: explain code, rename, format, fix a typo in a named place.
-- One sentence to do **just this step** without questions: only that step; learning resumes on the next build request.
-- `PLAN.md` alone does not disable questions. Existing source still triggers a map when relevant.
+After confirmation: one prediction sentence, then code with one `TODO(praxis:<topic>)` function for the student. Review compares the implementation to the prediction.
 
 ## Session lifecycle
 
+1. Student opens a **new** Agent chat and asks to build or change something substantial.
+2. **sessionStart** hook runs: may open the floor (`Status: pending`), inject resume context, sync **map**, export **DECISIONS.md** if notes exist, scan **marks** / **report**.
+3. Model uses **AskQuestion** for floor topics and follow-ons (rule); appends confirmed blocks to `.learn-coach/decisions.md`.
+4. While **`Status: pending`**, **preToolUse** denies project file edits (notes and one-step bypass excepted).
+5. Student confirms a step; model records **Prediction** and sets progress to **`confirmed`** when appropriate.
+6. Model writes the step and leaves the **TODO(praxis:…)** marker in one function.
+7. **preToolUse** denies edits that drop marker substrings until the student implements.
+8. Student implements the function (marker gone).
+9. Model writes `.learn-coach/review.md` (`Matched: yes` | `no`); **stop** / **session** may refresh `.learn-coach/report.md` and root **DECISIONS.md**.
+10. Next build request or chat continues from `.learn-coach/progress.md` and notes.
+
 ```mermaid
 flowchart LR
-  A[Build request] --> B{Small edit or one-step bypass?}
-  B -->|yes| Z[Do step / skip floor]
-  B -->|no| C[AskQuestion floor + extras]
-  C --> D[Confirm step + prediction]
-  D --> E[Write step + TODO marker]
-  E --> F[Student writes function]
-  F --> G[Review vs prediction]
-  G --> H[DECISIONS.md + notes updated]
+  A[Build request] --> B{Skip interview?}
+  B -->|no| C[AskQuestion + notes]
+  C --> D[Confirm + prediction]
+  D --> E[Scaffold + marker]
+  E --> F[Student implements]
+  F --> G[Review + export]
 ```
 
-1. Session start hook injects context (open decision, map note, practice note).
-2. Model appends decisions to `.learn-coach/decisions.md`; stop/session hooks regenerate root [`DECISIONS.md`](DECISIONS.md) from those notes.
-3. Stop hook clears a **one-step** bypass back to `Bypass: none`.
+## What gets written
 
-## Project files
+From [`docs/demo-session.mjs`](docs/demo-session.mjs) (expense tracker with existing `src/db.ts`):
 
-`.learn-coach/` is **operational state** for the model and hooks (safe to delete to reset a session). Root `DECISIONS.md` is a **generated** readable export; edit `.learn-coach/decisions.md` if wording should change, then let hooks regenerate `DECISIONS.md`.
+**Before first hook run**
 
-| File | Purpose |
-|---|---|
-| `.learn-coach/progress.md` | `Status:` pending \| confirmed; `Topic:`; `Bypass:` none \| one-step |
-| `.learn-coach/decisions.md` | Source of truth for decisions (model appends blocks) |
-| `.learn-coach/map.md` | Parts and unknowns for existing code |
-| `.learn-coach/marks.md` | Tracked `TODO(praxis:…)` locations (hook-maintained) |
-| `.learn-coach/review.md` | Verdict blocks: `Matched: yes` \| `no` |
-| `.learn-coach/report.md` | Student-facing review summary |
-| `DECISIONS.md` | Generated from `.learn-coach/decisions.md` ([templates](templates/)) |
+```text
+student-project/
+└── src/db.ts          # existing sample code (map scan finds it)
+```
 
-Manual edits to `.learn-coach/` files change what the **session** hook injects on the next Agent chat, including an open `Topic` or `Bypass` state.
+**After `session`**
 
-While `Status: pending`, edits outside `.learn-coach/` are refused except during `Bypass: one-step`.
+```text
+student-project/
+├── .learn-coach/
+│   ├── progress.md    # Status: pending, floor topic
+│   └── map.md         # Parts + Unknowns from listCodeFiles
+└── src/db.ts
+```
 
-### Map behavior
+**After model writes decision + stub, then `stop`**
 
-The **rule** tells the model to list described parts under **Parts** and leave unread paths under **Unknowns**. The **session hook** [`syncMap()`](hooks/record.mjs) scans the repo and, for each source file found:
+```text
+student-project/
+├── .learn-coach/
+│   ├── progress.md    # often Status: confirmed
+│   ├── decisions.md   # operational source of truth (append blocks)
+│   ├── map.md
+│   └── marks.md       # Topic / File / Function from TODO scan
+├── DECISIONS.md       # generated from decisions.md
+└── src/
+    ├── db.ts
+    └── expenses.ts    # stub still contains TODO(praxis:…)
+```
 
-- Adds a bare list entry under **Parts** (`- path`) if not already mentioned there.
-- Adds the same path under **Unknowns** unless the map already has a **description** line for that path (anything more than `- path` alone).
+**After student implementation + `review.md` + `stop`**
 
-So a newly scanned file often appears under **both** sections until the model (or you) add a description under Parts. Once `src/foo.ts` has a line like `src/foo.ts — handles auth`, later syncs stop listing it under Unknowns.
+```text
+student-project/
+├── .learn-coach/
+│   ├── …              # progress, decisions, map, marks
+│   ├── review.md      # Matched: yes|no — **model-written** (driver fakes this in the demo)
+│   └── report.md      # **hook-generated** on stop from review.md + decisions
+├── DECISIONS.md
+└── src/expenses.ts    # marker removed — student implementation
+```
 
-**Scan limits** ([`listCodeFiles()`](hooks/record.mjs)): max depth **12** directories; at most **40** source files; skips `node_modules`, `dist`, `.git`, `.learn-coach`. Extensions: `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.py`, `.go`, `.java`, `.rs`, `.rb`, `.php`, `.cs`, `.cpp`, `.c`, `.h`, `.swift`, `.kt`. If the scan hits the file cap, Unknowns gets `Further files were not listed.`
-
-No map is written for repos with no matching source files, or for this plugin repository.
-
-### `TODO(praxis:<topic>)` lifecycle
-
-Hooks detect the literal substring `TODO(praxis:<topic>)` ([`MARKER`](hooks/review.mjs): `TODO(praxis:([^)]+))`). The topic may contain spaces and must not contain `)`. It can appear anywhere in source (tests use it inside a string, not only in a comment). The captured topic is matched to the decision block’s `Topic:` line for reviews.
-
-1. After confirmation, the model writes the step and leaves **one** marked function body containing that substring.
-2. **preToolUse gate** ([`protectMarkedEdit`](hooks/review.mjs)): for files that still contain a marker, an edit is **denied** if the post-edit file would **not still include every `TODO(praxis:…)` substring** present before the edit (for example replacing a `throw new Error("TODO(praxis:…)")` line with real code). Edits that leave all marker strings unchanged are allowed (see [`src/review.test.ts`](src/review.test.ts)).
-3. **stop / session:** hooks scan sources, merge marks into `.learn-coach/marks.md`.
-4. When the marker substring is **gone** and a **Prediction** exists on the matching decision, the hook expects a model review in `.learn-coach/review.md`; it may write `.learn-coach/report.md` for the student.
-
-## Reset a session
-
-In the **student project**:
-
-1. Delete the `.learn-coach/` directory (or remove its files).
-2. Optionally delete `DECISIONS.md` if you want no exported history (hooks only regenerate `DECISIONS.md` when `.learn-coach/decisions.md` exists with at least one block).
-3. Start a **new Agent** chat in that project.
-
-Hooks will not remove stale `DECISIONS.md` automatically when `.learn-coach/` is gone.
+Manual edits under `.learn-coach/` change what the **session** hook injects on the next chat (open `Topic`, `Bypass`, etc.). While `Status: pending`, edits outside `.learn-coach/` are refused except during `Bypass: one-step`.
 
 ## Troubleshooting
 
 | Symptom | Things to check |
 |---|---|
-| No AskQuestion / no interview | Praxis enabled in Customize? **Reload Window** after copying the plugin? Chat opened in a project that is **not** this plugin repo? |
-| Stale chat after install or reload | Agent chats that **started before** reload keep old context — open a **new** Agent chat in the student project. |
-| Edit denied | `.learn-coach/progress.md` may show `Status: pending` — confirm the step or finish the open question; or use a valid one-step bypass. |
-| Leftover pending from an earlier try | See [Reset a session](#reset-a-session): remove `.learn-coach/`, optionally `DECISIONS.md`, then a **new** Agent chat. |
-| Plugin not discovered | `.cursor-plugin/plugin.json` must sit directly under `~/.cursor/plugins/local/praxis/`, not in a nested `Praxis/` subfolder. |
-| Marked function edit denied | Agent edit would drop a `TODO(praxis:…)` substring — the student implements the function (marker may live in a string literal until replaced). |
-| Map looks duplicated | Expected until Parts lines have descriptions; see [Map behavior](#map-behavior). |
-| `DECISIONS.md` out of date | Run a chat stop or new session so **stop** / **session** hooks run; notes must live in `.learn-coach/decisions.md`. |
-| Plugin changes ignored | Re-copy to `~/.cursor/plugins/local/praxis` and **Reload Window** (live folder is the copy, not your git tree unless it is the copy). |
-| Gate / map / export seem inactive | Cursor runs `node "$CURSOR_PLUGIN_ROOT/hooks/praxis.mjs" …` ([`hooks/hooks.json`](hooks/hooks.json)). If `node` is not on PATH, hooks do not run; this repository does not define Cursor’s UI for that failure. |
+| No AskQuestion | Praxis enabled? **Reload Window**? Student project (not plugin repo)? **New** Agent chat? |
+| Stale chat after reload | Chats started before reload — open a **new** Agent chat |
+| Edit denied (`pending`) | Finish or confirm open topic in `.learn-coach/progress.md`, or valid one-step bypass |
+| Leftover pending | [Reset a session](#try-praxis-as-a-student) |
+| Plugin not loaded | `plugin.json` directly under `local/praxis/`, not nested `Praxis/` |
+| Marker edit denied | Agent must not remove `TODO(praxis:…)`; student implements |
+| Map duplicated paths | [Map behavior](#map-behavior) until Parts lines have descriptions |
+| `DECISIONS.md` stale | Trigger **stop** / **session**; need `.learn-coach/decisions.md` blocks |
+| Plugin changes ignored | Re-copy to `local/praxis` and reload |
+| Hooks inactive | `node` on PATH for `hooks/hooks.json`; if missing, hooks do not run (undefined UI here) |
 
-## Example session (outline)
+## How it works
 
-Expense tracker, beginner, SQLite for where data lives:
+| Piece | File | Role |
+|---|---|---|
+| Rule | [`rules/praxis.mdc`](rules/praxis.mdc) | Interview, floor, prediction, marker contract |
+| Session / gate | [`hooks/praxis.mjs`](hooks/praxis.mjs) | Context, `Status: pending` gate, one-step bypass |
+| Record | [`hooks/record.mjs`](hooks/record.mjs) | `syncMap`, `DECISIONS.md` from notes |
+| Review | [`hooks/review.mjs`](hooks/review.mjs) | Marker guard, `marks.md`, `report.md` |
 
-1. New Agent chat: *"Build an expense tracker for personal spending."* Floor AskQuestion turns include level (beginner) and **Where the data lives** (SQLite).
-2. After confirmation on that step, prediction: *"Opening the database creates an expenses table with amount and date columns."*
-3. Model writes scaffolding and leaves one function for the student. A minimal stub the hooks recognize (same pattern as tests):
+**Gate:** `Status: pending` blocks project edits; `.learn-coach/` allowed; `Bypass: one-step` allows one step; `confirmed` or empty progress does not block ([`gateEdit`](hooks/praxis.mjs)).
 
-```typescript
-export function openExpenseDb(): void {
-  throw new Error("TODO(praxis:Where the data lives)");
-}
-```
+**Marker:** substring `TODO(praxis:([^)]+))` — topic may include spaces, not `)`. [`protectMarkedEdit`](hooks/review.mjs) denies edits that remove any marker substring (see [`src/review.test.ts`](src/review.test.ts)). **Do not ask the agent to remove or implement the marked function** — that is the student's step.
 
-4. The student replaces the body so the file no longer contains the `TODO(praxis:Where the data lives)` substring.
-5. The model records `.learn-coach/review.md` with `Topic: Where the data lives` and `Matched: yes` or `Matched: no` against that prediction; stop/session hooks can write `.learn-coach/report.md`.
-6. `DECISIONS.md` lists the decisions; the report quotes choice, reason, and prediction.
+### Map behavior
+
+[`syncMap()`](hooks/record.mjs) adds each scanned file as bare `- path` under **Parts** and also under **Unknowns** until Parts has a description line (rule text differs; hook behavior is what tests assert). **Limits:** depth 12, max 40 files; skips `node_modules`, `dist`, `.git`, `.learn-coach`; extensions listed in `record.mjs`. No map without matching sources or in the plugin repo.
+
+## Known limitations
+
+- Pre-release; local install; marketplace later ([PLAN.md](PLAN.md)).
+- Shallow map scan; duplicate Parts/Unknowns entries until described.
+- AskQuestion nuance is rule-driven; hooks enforce files and markers only.
+- [`src/path.test.ts`](src/path.test.ts): empty MCP wiring, hook sources omit retired symbols; integration without `session.json` / `questions/core.yaml`.
 
 ## Develop Praxis
 
-This repository is the plugin. **Node.js 20+** is required for development and for hook scripts at runtime.
+Node **20+** required for `npm ci` / `npm test` and for hook scripts at runtime in Cursor.
 
 ```bash
 npm ci
 npm test
-npm run build   # optional: compile retired MCP server + VS Code extension bits
+npm run build   # retired MCP + extension artifacts
 ```
 
-- **`npm test`** — `tsx --test` over `src/*.test.ts` and `src/extension/*.test.ts` (interview rule, gate, record, map, review, student path). No `.github` CI in this repo; run tests locally.
-- **`npm run build`** — TypeScript compile plus bundle [`src/extension/extension.ts`](src/extension/extension.ts) to `dist/extension.cjs`. Also builds MCP entry [`src/index.ts`](src/index.ts). **Students do not use this build** for the chat-first path.
+No `.github` CI — run tests locally. [`package.json`](package.json): `engines.node >=20`, `vscode ^1.95.0` (extension only). Student apps need no Node.
 
-Follow [PLAN.md](PLAN.md) for slices and non-goals. The workspace rule [`.cursor/rules/no-code-before-export.mdc`](.cursor/rules/no-code-before-export.mdc) applies when developing here (no student interview in this repo).
+Follow [PLAN.md](PLAN.md). Workspace rule [`.cursor/rules/no-code-before-export.mdc`](.cursor/rules/no-code-before-export.mdc): do not run the student interview against this repo.
 
-### Runtime requirements
+## Retired compatibility path
 
-| Requirement | Detail |
+These remain for **tests and compatibility only** and may be removed in a later cleanup. Students on the shipping path use the rule and hooks only.
+
+| Active | Retired |
 |---|---|
-| Node | `>=20` per [`package.json`](package.json) `engines.node`; hooks call `node` on each session / edit / stop |
-| VS Code engine | `^1.95.0` in `package.json` (extension artifact only; not loaded for students) |
-| Student project | No Node/npm required in the student app itself |
-
-## Active path vs retired path
-
-| Active (student path) | Retired (kept in repo, not started for students) |
-|---|---|
-| [`rules/praxis.mdc`](rules/praxis.mdc) | [`questions/core.yaml`](questions/core.yaml) fixed quiz tree |
-| [`hooks/`](hooks/) + [`hooks/hooks.json`](hooks/hooks.json) | MCP chat loop in [`src/server.ts`](src/server.ts) — tools: `start_session`, `next_question`, `record_answer`, `export_decisions`, `add_project_questions`, `scaffold_todos`, `review_todo` |
-| AskQuestion in chat | Question card: [`src/extension/`](src/extension/) (build → `dist/extension.cjs`) |
-| `TODO(praxis:<topic>)` | `TODO(learn-coach:<questionId>)` from `scaffold_todos` |
-| Empty [`mcp.json`](mcp.json) / [`.cursor/mcp.json`](.cursor/mcp.json) | `npm start` MCP server (old flow) |
-
-[`src/path.test.ts`](src/path.test.ts) checks that shipping config does not wire the retired path (`mcp.json` and `.cursor/mcp.json` have empty `mcpServers`; no `showQuestion` in the extension source; `hooks/praxis.mjs` does not reference `core.yaml`, `scaffold_todos`, or `showQuestion`), and runs an integration case where a student project completes `DECISIONS.md` / `.learn-coach/report.md` from `TODO(praxis:…)` **without** `.learn-coach/session.json` or `questions/core.yaml`.
+| `rules/praxis.mdc` + `hooks/` | [`questions/core.yaml`](questions/core.yaml) |
+| AskQuestion + `TODO(praxis:…)` | MCP [`src/server.ts`](src/server.ts): `start_session`, `next_question`, `record_answer`, `export_decisions`, `add_project_questions`, `scaffold_todos`, `review_todo` |
+| Empty [`mcp.json`](mcp.json) / [`.cursor/mcp.json`](.cursor/mcp.json) | Question card [`src/extension/`](src/extension/) → `dist/extension.cjs` |
+| Notes → `DECISIONS.md` via hooks | `TODO(learn-coach:…)` from `scaffold_todos`; `npm start` MCP server |
+| | [`src/render.ts`](src/render.ts) **`writeExport`** writes `DECISIONS.md` and `PLAN.md` directly from YAML session state (old MCP flow only — not the hook export) |
 
 ## Repository map
 
 | Path | Role |
 |---|---|
-| `.cursor-plugin/plugin.json` | Cursor plugin manifest |
-| `rules/praxis.mdc` | Shipping interview rule |
-| `hooks/hooks.json`, `hooks/*.mjs` | Session, gate, record, review |
-| `templates/` | `DECISIONS.md` templates |
+| `.cursor-plugin/plugin.json` | Manifest |
+| `rules/praxis.mdc` | Shipping rule |
+| `hooks/` | Student hooks |
+| `docs/demo-session.mjs` | Reproducible hook demo |
+| `templates/` | `DECISIONS.md` templates for hook export |
 | `src/` | Tests + retired MCP, flow, extension |
-| `examples/student/` | Fixture folder (card-era README only) |
-| `.cursor/hooks.json` | Dev copy of hooks for this workspace (uses relative `hooks/praxis.mjs`) |
-| `PLAN.md` | Product plan |
-
-## Known limitations
-
-- Pre-release, local-install oriented; marketplace publishing is a later goal ([PLAN.md](PLAN.md)).
-- Map scan is shallow (depth 12, 40 files) and may omit large monorepos.
-- Map sync lists new files under both Parts and Unknowns until described (rule vs hook mismatch).
-- Interview quality depends on the model following `rules/praxis.mdc` (rule); gates enforce files and markers, not every AskQuestion nuance.
-- Retained MCP/extension code can confuse readers; it is not on the student path.
+| `examples/student/` | Legacy fixture note |
+| `.cursor/hooks.json` | Dev workspace hooks |
+| `PLAN.md` | Plan |
 
 ## Plan
 
-Roadmap and locked decisions: [PLAN.md](PLAN.md).
+[Roadmap and locked decisions](PLAN.md).

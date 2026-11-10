@@ -1,0 +1,107 @@
+Student project: /tmp/praxis-demo-expense-CfbGRe
+Hook binary: /workspace/hooks/praxis.mjs
+
+=== 1 session (new chat, existing code → map + floor context) ===
+
+stdout JSON keys: additional_context
+Praxis is on. Do not ask the student to run a command.
+
+From the first prompt, before any project code, use the AskQuestion tool. Do not ask in plain text. Each call contains one question, then wait for the selected answer before the next call. Write the question and the options from what the student said. There is no fixed list of answers. A short prompt still covers every floor topic, each as its own question. For each one, explain in the question prompt what the decision changes in this project, then each option: what it is, when someone would choose it, and what they give up. A recommendation is only a suggestion. One answer does not close two topics.
+
+1. Their level for the work in front of them.
+2. The stack.
+3. Where the data lives.
+4. Who may see or change it.
+5. How it ships.
+
+Also ask about a decision their prompt opens that those five do not cover. Skip the floor only when they name a small edit: explain this code, rename, format, or fix a typo. When they say to do just this step without questions, set Bypass to one-step and do that step only.
+
+Praxis has an open decision: the floor. Continue that question in this chat before writing project code. Do not ask the student to run a command. The note is .learn-coach/progress.md.
+
+A map of the existing code is in .learn-coach/map.md. Mark anything you could not see under Unknowns before asking a new question.
+
+=== 2 gate Write (Status: pending → deny project file) ===
+
+{
+  "permission": "deny",
+  "user_message": "Praxis is waiting on an open decision: the floor.",
+  "agent_message": "Do not edit project files until the student confirms \"the floor\". You may update .learn-coach/progress.md. Set Bypass to one-step only when they asked to do just this step without questions. That bypass covers one step."
+}
+
+=== 3 Model appends decision + sets confirmed (simulated) ===
+
+Wrote .learn-coach/decisions.md block and src/expenses.ts stub
+Goal: Family expense tracker
+
+## Decision
+Topic: Where the data lives
+Context: Where family expenses are stored and queried.
+Options: SQLite file | JSON file on disk | Hosted database
+Choice: SQLite file
+Date: 2026-11-10
+Reason:
+I want SQL queries and it works offline for the family budget.
+Prediction:
+saves a new expense and returns its generated id
+## End
+
+=== 4 stop (export DECISIONS.md + scan marks) ===
+
+# Decisions
+
+Project goal: Family expense tracker
+
+One entry per decision: context, options considered, choice, reason, date.
+
+## 1. Where the data lives
+
+- **Context:** Where family expenses are stored and queried.
+- **Options considered:**
+- SQLite file
+- JSON file on disk
+- Hosted database
+- **Choice:** SQLite file
+- **Reason:** I want SQL queries and it works offline for the family budget.
+- **Date:** 2026-11-10
+- **Prediction:** saves a new expense and returns its generated id
+
+.learn-coach/marks.md:
+## Mark
+Topic: Where the data lives
+File: src/expenses.ts
+Function: saveExpense
+## End
+
+=== 5 gate StrReplace (agent removes marker → deny) ===
+
+{
+  "permission": "deny",
+  "user_message": "Praxis left TODO(praxis:Where the data lives) for you to write.",
+  "agent_message": "The marked function is the student's. Do not remove TODO(praxis:Where the data lives) and do not rewrite their function."
+}
+
+=== 6 Student implements (file on disk, then stop) ===
+
+# Review
+
+## Where the data lives
+Choice: SQLite file
+Reason: I want SQL queries and it works offline for the family budget.
+Prediction: saves a new expense and returns its generated id
+Function: saveExpense in src/expenses.ts
+Matched: yes
+
+=== 7 Files produced ===
+
+✓ .learn-coach/progress.md
+✓ .learn-coach/decisions.md
+✓ .learn-coach/map.md
+✓ .learn-coach/marks.md
+✓ .learn-coach/review.md
+✓ .learn-coach/report.md
+✓ DECISIONS.md
+✓ src/expenses.ts
+
+=== Done ===
+
+All hook steps matched expectations.
