@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, it } from "node:test";
@@ -24,7 +24,7 @@ function run(command: string, project: string, input: unknown): unknown {
   const result = spawnSync(process.execPath, [hook, command], {
     input: JSON.stringify(input),
     encoding: "utf8",
-    env: { ...process.env, CURSOR_PROJECT_DIR: project },
+    env: { ...process.env, CURSOR_PROJECT_DIR: project, PRAXIS_STATE_DIR: path.join(project, ".praxis-state") },
   });
   assert.equal(result.status, 0, result.stderr);
   return JSON.parse(result.stdout);
@@ -72,21 +72,29 @@ describe("edit gate", () => {
     assert.match(context, /turn Praxis on/);
     assert.match(context, /leave it off/);
     assert.match(context, /Do not ask the student to run a command/);
-    assert.match(readFileSync(path.join(project, ".praxis", "progress.md"), "utf8"), /Status: choosing/);
-    const denied = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts", contents: "export const started = true;\n" }, cwd: project });
-    assert.equal((denied as { permission: string }).permission, "deny");
+    assert.equal(existsSync(path.join(project, ".praxis")), false);
+    const allowed = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts", contents: "export const started = true;\n" }, cwd: project });
+    assert.equal((allowed as { permission: string }).permission, "allow");
     const notes = run("gate", project, { tool_name: "Write", tool_input: { path: ".praxis/progress.md", contents: "Praxis: off\nStatus: off\nBypass: none\n" }, cwd: project });
-    assert.equal((notes as { permission: string }).permission, "allow");
+    assert.equal((notes as { permission: string }).permission, "deny");
+    assert.equal(existsSync(path.join(project, ".praxis")), false);
   });
 
-  it("stays quiet after they leave Praxis off", () => {
+  it("stays quiet after they leave Praxis off and keeps no notes", () => {
     const project = tempProject();
     note(project, "Praxis: off\nStatus: off\nBypass: none\n");
     const started = run("session", project, { cwd: project }) as { additional_context?: string };
     assert.match(started.additional_context ?? "", /Praxis is off for this project/);
+    assert.match(started.additional_context ?? "", /Do not create \.praxis/);
     assert.doesNotMatch(started.additional_context ?? "", /Their level/);
+    assert.equal(existsSync(path.join(project, ".praxis")), false);
+    const again = run("session", project, { cwd: project }) as { additional_context?: string };
+    assert.match(again.additional_context ?? "", /Praxis is off for this project/);
+    assert.equal(existsSync(path.join(project, ".praxis")), false);
     const allowed = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts", contents: "export const started = true;\n" }, cwd: project });
     assert.equal((allowed as { permission: string }).permission, "allow");
+    const turnedOn = run("gate", project, { tool_name: "Write", tool_input: { path: ".praxis/progress.md", contents: "Praxis: on\nStatus: pending\nTopic: the floor\nBypass: none\n" }, cwd: project });
+    assert.equal((turnedOn as { permission: string }).permission, "allow");
   });
 
   it("denies through the hook, then allows one step and closes the bypass", () => {

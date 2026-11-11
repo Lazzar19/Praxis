@@ -1,30 +1,30 @@
-Student project: /tmp/praxis-demo-expense-yr2y8Y
-Hook binary: /home/lazzar20/Projects/learn-coach/hooks/praxis.mjs
+Student project: /tmp/praxis-demo-expense-VYT1sV
+Hook binary: /home/lazzar20/Projects/Praxis/hooks/praxis.mjs
 
-=== 1 session (new chat → on or off, then a map on disk) ===
+=== 1 session (new chat → on or off, no notes yet) ===
 
 stdout JSON keys: additional_context
 This project has not chosen Praxis yet. Do not ask the student to run a command.
 
-Call AskQuestion once, before any project code and before the floor. One question, two options: turn Praxis on for this project, or leave it off. Do not ask in plain text.
+Call AskQuestion once, before any project code and before the floor. One question, two options: turn Praxis on for this project, or leave it off. Do not ask in plain text. Do not create .praxis before they answer.
 
-If they choose off, write these lines to .praxis/progress.md and do not ask another question:
+If they choose off, write these lines to .praxis/progress.md and do not ask another question. That write is refused, and .praxis is not kept:
 Praxis: off
 Status: off
 Bypass: none
 
-If they choose on, write these lines, then ask the floor one question at a time:
+If they choose on, write these lines, then ask the floor one question at a time. Notes begin with that file:
 Praxis: on
 Status: pending
 Topic: the floor
 Bypass: none
 
-=== 2 gate Write (Status: choosing → deny project file) ===
+=== 2 gate Write (leave Praxis off → no directory) ===
 
 {
   "permission": "deny",
-  "user_message": "Choose whether Praxis is on for this project.",
-  "agent_message": "Call AskQuestion once with two options: turn Praxis on for this project, or leave it off. Do not edit project files until they choose. You may update .praxis/progress.md."
+  "user_message": "Praxis is off for this project. No notes are kept.",
+  "agent_message": "They left Praxis off. Do not create .praxis and do not write notes. If they later ask to turn Praxis on, write .praxis/progress.md with Praxis: on and Status: pending, then ask the floor with AskQuestion, one question at a time."
 }
 
 === 3 Model appends decision + sets confirmed (simulated) ===

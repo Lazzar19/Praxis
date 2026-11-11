@@ -53,8 +53,8 @@ This project has not chosen Praxis yet.
 ...
 two options: turn Praxis on for this project, or leave it off.
 
-=== 2 gate Write (Status: choosing) ===
-{"permission":"deny","user_message":"Choose whether Praxis is on for this project.",...}
+=== 2 gate Write (leave Praxis off) ===
+{"permission":"deny","user_message":"Praxis is off for this project. No notes are kept.",...}
 
 === 5 gate StrReplace (marker removal) ===
 {"permission":"deny","user_message":"Praxis left TODO(praxis:Where the data lives) for you to write.",...}
@@ -126,7 +126,7 @@ Build requests start the interview: all five floor topics (level, stack, where d
 
 Reasons are stored verbatim, with one retry if the reason fits another option.
 
-The first question in a new project is a choice: turn Praxis on, or leave it off. The choice is stored in `.praxis/progress.md`. Off means no further questions and no edit block. Asking to turn Praxis on starts the floor.
+The first question in a new project is a choice: turn Praxis on, or leave it off. Off keeps no `.praxis` directory and no notes. Asking in chat to turn Praxis on is when that directory and the floor begin.
 
 **Skips:** named small edits; **one-step bypass** for a single step without questions (resets on stop).
 
@@ -137,7 +137,7 @@ After confirmation: one prediction sentence, then code with one `TODO(praxis:<to
 ## Session lifecycle
 
 1. Student opens a **new** Agent chat and asks to build or change something substantial.
-2. **sessionStart** hook runs: a project with no choice is `Status: choosing` until they turn Praxis on or leave it off. On continues into the floor. Off stays quiet.
+2. **sessionStart** hook runs. A project with no choice is asked on or off, and `.praxis` is not created yet. Off stays quiet with no notes. On writes `.praxis/progress.md` and continues into the floor.
 3. Model uses **AskQuestion** for floor topics and follow-ons (rule); appends confirmed blocks to `.praxis/decisions.md`.
 4. While **`Status: pending`**, **preToolUse** denies project file edits (notes and one-step bypass excepted).
 5. Student confirms a step; model records **Prediction** and sets progress to **`confirmed`** when appropriate.

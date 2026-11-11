@@ -31,7 +31,7 @@ function runHook(command, project, input) {
   const result = spawnSync(process.execPath, [HOOK, command], {
     input: JSON.stringify(input),
     encoding: "utf8",
-    env: { ...process.env, CURSOR_PROJECT_DIR: project },
+    env: { ...process.env, CURSOR_PROJECT_DIR: project, PRAXIS_STATE_DIR: path.join(project, ".praxis-state") },
   });
   if (result.status !== 0) {
     fail(`${command} exited ${result.status}: ${result.stderr}`);
@@ -89,7 +89,7 @@ try {
   console.log(`Student project: ${project}`);
   console.log(`Hook binary: ${HOOK}`);
 
-  section("1 session (new chat → on or off, then a map on disk)");
+  section("1 session (new chat → on or off, no notes yet)");
   const session1 = runHook("session", project, { cwd: project });
   const ctx1 = session1.additional_context ?? "";
   if (!ctx1.includes("AskQuestion")) fail("session missing AskQuestion guidance");
@@ -97,23 +97,19 @@ try {
   if (!ctx1.includes("leave it off")) fail("session missing the off option");
   console.log("stdout JSON keys:", Object.keys(session1).join(", "));
   console.log(trimBlock(ctx1));
-  if (!existsSync(path.join(project, ".praxis", "map.md"))) {
-    fail("map.md was not written");
-  }
-  if (!existsSync(path.join(project, ".praxis", "progress.md"))) {
-    fail("progress.md was not written for floor");
-  }
+  if (existsSync(path.join(project, ".praxis"))) fail(".praxis was created before a choice");
 
-  section("2 gate Write (Status: choosing → deny project file)");
+  section("2 gate Write (leave Praxis off → no directory)");
   const denied = runHook("gate", project, {
     tool_name: "Write",
     tool_input: {
-      path: "src/app.ts",
-      contents: "export const started = true;\n",
+      path: ".praxis/progress.md",
+      contents: "Praxis: off\nStatus: off\nBypass: none\n",
     },
     cwd: project,
   });
-  if (denied.permission !== "deny") fail("expected deny on pending Write");
+  if (denied.permission !== "deny") fail("expected the off write to be refused");
+  if (existsSync(path.join(project, ".praxis"))) fail(".praxis was kept after a refusal");
   console.log(JSON.stringify(denied, null, 2));
 
   section("3 Model appends decision + sets confirmed (simulated)");
@@ -134,6 +130,7 @@ Prediction:
 ${prediction}
 ## End
 `;
+  mkdirSync(path.join(project, ".praxis"), { recursive: true });
   writeFileSync(path.join(project, ".praxis", "decisions.md"), decisionsBody);
   writeFileSync(
     path.join(project, ".praxis", "progress.md"),
@@ -150,6 +147,7 @@ ${prediction}
   console.log(trimBlock(decisionsBody, 20));
 
   section("4 stop (export DECISIONS.md + scan marks)");
+  runHook("session", project, {});
   runHook("stop", project, {});
   if (!existsSync(path.join(project, "DECISIONS.md"))) fail("DECISIONS.md missing");
   const decisionsMd = readFileSync(path.join(project, "DECISIONS.md"), "utf8");

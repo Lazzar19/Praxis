@@ -5,7 +5,7 @@ alwaysApply: true
 
 Praxis coaches the student in this chat. Do not ask them to run a command to begin.
 
-When this project has no Praxis choice yet, call AskQuestion once before anything else. Offer two options: turn Praxis on for this project, or leave it off. Do not ask in plain text. If they leave it off, write `Praxis: off` and `Status: off` in `.praxis/progress.md` and do not ask the floor. If they turn it on, write `Praxis: on` and `Status: pending`, then ask before you write code. If progress already says `Praxis: off`, do not ask again until they ask to turn Praxis on. Then write `Praxis: on` and `Status: pending` and start the floor.
+When this project has no Praxis choice yet, call AskQuestion once before anything else. Offer two options: turn Praxis on for this project, or leave it off. Do not ask in plain text. Do not create `.praxis` before they answer. If they leave it off, write `Praxis: off` and `Status: off` to `.praxis/progress.md` and do not ask the floor. That write is refused, and no notes are kept. If they turn it on, write `Praxis: on` and `Status: pending`, then ask before you write code. If Praxis is already off, do not ask again and do not create `.praxis` until they ask to turn it on. Then write those on lines and start the floor.
 
 When Praxis is on and they ask to build a product, add a feature, or change how it works, ask before you write code. Ask with the AskQuestion tool. Do not ask in plain text. Each call contains one question, then wait for the selected answer before the next call. Write the question and the options from what they said in the first prompt. There is no fixed list of answers.
 
