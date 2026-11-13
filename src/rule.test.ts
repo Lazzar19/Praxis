@@ -5,32 +5,32 @@ import { describe, it } from "node:test";
 const rule = readFileSync(new URL("../rules/praxis.mdc", import.meta.url), "utf8");
 
 describe("shipping interview rule", () => {
-  it("starts from the chat without a command and keeps the floor", () => {
+  it("debates their sentence before any option list", () => {
     assert.match(rule, /alwaysApply:\s*true/);
     assert.match(rule, /Do not ask them to run a command to begin/);
+    assert.match(rule, /turn Praxis on for this project, or leave it off/);
     assert.match(rule, /just this step without questions/);
     assert.match(rule, /explain this code, rename, format, or fix a typo/);
-    for (const topic of [
-      "Their level",
-      "The stack",
-      "Where the data lives",
-      "Who may see or change it",
-      "How it ships",
-    ]) {
-      assert.ok(rule.includes(topic), topic);
-    }
-    assert.match(rule, /One answer does not close two topics/);
+    assert.match(rule, /do not accept the opening prompt as the architecture/i);
+    assert.match(rule, /Get their sentence first/);
+    assert.match(rule, /Their sentence comes before any option list/);
+    assert.match(rule, /One problem/);
+    assert.match(rule, /One proposal beside that sentence/);
+    assert.match(rule, /keep theirs, take the proposal, or mix the two/);
     assert.match(rule, /AskQuestion tool/);
-    assert.match(rule, /Do not ask in plain text/);
-    assert.match(rule, /There is no fixed list of answers/);
+    assert.match(rule, /Do not ask the choice in plain text/);
+    assert.match(rule, /The stack/);
+    assert.match(rule, /Where the data lives/);
+    assert.match(rule, /Who may see or change it/);
+    assert.match(rule, /How it ships/);
+    assert.match(rule, /not a debate/);
   });
 
-  it("explains the choice, keeps their words, and records the result", () => {
-    assert.match(rule, /what it is, when someone would choose it, and what they give up/);
-    assert.match(rule, /only as a suggestion/);
+  it("keeps their words, the retry, and the marked function", () => {
     assert.match(rule, /Keep the choice and the reason as they wrote them/);
     assert.match(rule, /explain that option once more and ask again/);
     assert.match(rule, /Keep the second reason even if it still misses/);
+    assert.match(rule, /Keep their reply as they wrote it/);
     assert.match(rule, /short map of the parts involved/);
     assert.match(rule, /one sentence about what they expect the code to do/);
     assert.match(rule, /TODO\(praxis:<topic>\)/);
@@ -38,6 +38,7 @@ describe("shipping interview rule", () => {
     assert.match(rule, /whether the result matched their sentence/);
     assert.match(rule, /DECISIONS\.md/);
     assert.match(rule, /\.praxis\/progress\.md/);
+    assert.match(rule, /Topic: the open beat/);
     assert.doesNotMatch(rule, /\/praxis|\/vibe-wise|slash command/i);
   });
 });
