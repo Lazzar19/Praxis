@@ -154,6 +154,18 @@ When their sentence, the prompt, or the map raises one production concern, that 
 
 Done when the shipping rule names that list and says not to run it on a small project that does not raise it.
 
+### Slice 11 — the map names a role
+
+A scanned file is not only a path. The map line says what kind of part it is when the path shows that: entry point, test, package manager, framework, configuration, API boundary, data access, or deployment. A role is a hint. The file stays under Unknowns until a description says what it does. Role files stay on the map when plain source files would fill the forty-file cap. The debate still covers only the parts this request changes.
+
+Done when a map of a package file, a Dockerfile, a route, a data file, and a test names those roles, and a role line is still listed under Unknowns.
+
+### Slice 12 — a bypass names its scope
+
+`Bypass: one-step` stays, and it means the whole step until stop. A narrower step uses a block with `scope`, `expires: stop`, and their reason. The scopes are one-edit, one-file, one-build-step, documentation-only, and test-only. one-edit closes after that edit. one-file stays on the first file it touches. documentation-only allows docs. test-only allows tests. Stop clears every scope back to none.
+
+Done when each scope allows the edit it names and denies the edit it does not, and `Bypass: one-step` still allows one step and then closes.
+
 ---
 
 ## Later
@@ -170,4 +182,6 @@ Done when the shipping rule names that list and says not to run it on a small pr
 - `hooks/praxis.mjs` — resume the open beat, slice 8
 - `README.md` and `docs/demo-session.mjs` — slice 9
 - `rules/praxis.mdc` — production concerns, slice 10
+- `hooks/record.mjs` — role hints on the map, slice 11
+- `hooks/praxis.mjs` and `rules/praxis.mdc` — bypass scope, slice 12
 - `.praxis/` in the student project — notes, not the plugin source

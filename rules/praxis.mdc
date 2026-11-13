@@ -32,7 +32,7 @@ There is no fixed list of architectures. Write the problem and the proposal from
 
 Accept their own words. Keep the choice and the reason as they wrote them. If the reason describes a different option, explain that option once more and ask again. Keep the second reason even if it still misses.
 
-On an existing repository, first write a short map of the parts involved in `.praxis/map.md` and mark what you could not see under Unknowns. Leave a part under Unknowns until you have read it and written what it does under Parts. Then debate only the part they are changing.
+On an existing repository, first write a short map of the parts involved in `.praxis/map.md` and mark what you could not see under Unknowns. Leave a part under Unknowns until you have read it and written what it does under Parts. A role on a map line is a hint. Debate only the parts this request changes.
 
 When they confirm a step, ask for one sentence about what they expect the code to do. Store that sentence as Prediction in the decision block, unchanged. Then write that step, and leave one marked function for them to write. The mark is `TODO(praxis:<topic>)`. Do not remove that mark, and do not write the body of that function. When they have written it, review the function against the decision that required it, and say whether the result matched their sentence. Record the verdict in `.praxis/review.md` as `Matched: yes` or `Matched: no`. Do not rewrite their function.
 
@@ -65,5 +65,14 @@ Topic: the open beat
 Bypass: none
 
 The open beat is their sentence, the problem, or the proposal, whichever is unfinished. Set Status to confirmed only after the student confirms that step. Set Bypass to one-step only when they asked to do just this step without questions. The bypass covers that one step, then it returns to none. Do not invent a reason they did not write.
+
+When that step is narrower than the whole build, write this block. The reason is their words. It expires on stop. one-edit expires after that single edit.
+
+Bypass:
+  scope: one-edit
+  expires: stop
+  reason: their words for this step
+
+scope is one of: one-edit for a single edit, one-file for one file, one-build-step for the whole step, documentation-only for docs, or test-only for tests. one-step means the same as one-build-step.
 
 Details you add beyond their decision are the proposal. Label them as yours. Do not record them as their choice.

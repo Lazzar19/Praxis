@@ -3,20 +3,34 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { homedir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { ensureMap, isPluginProject, writeRecord } from "./record.mjs";
+import { classifyPath, ensureMap, isPluginProject, writeRecord } from "./record.mjs";
 import { protectMarkedEdit, recordPractice } from "./review.mjs";
 
 const EDIT_TOOLS = new Set(["Write", "StrReplace", "Delete", "EditNotebook", "Edit", "ApplyPatch"]);
 
+const BYPASS_SCOPES = "none|one-step|one-edit|one-file|one-build-step|documentation-only|test-only";
+
 export function parseProgress(text) {
-  const progress = { status: null, topic: "", bypass: "none", praxis: null };
-  for (const line of text.split(/\r?\n/)) {
+  const progress = { status: null, topic: "", bypass: "none", praxis: null, file: "" };
+  const lines = text.split(/\r?\n/);
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
     const status = /^Status:\s*(pending|confirmed|choosing|off)\s*$/i.exec(line);
     if (status) progress.status = status[1].toLowerCase();
     const topic = /^Topic:\s*(.*?)\s*$/.exec(line);
     if (topic) progress.topic = topic[1];
-    const bypass = /^Bypass:\s*(none|one-step)\s*$/i.exec(line);
+    const bypass = new RegExp(`^Bypass:\\s*(${BYPASS_SCOPES})\\s*$`, "i").exec(line);
     if (bypass) progress.bypass = bypass[1].toLowerCase();
+    if (/^Bypass:\s*$/i.test(line)) {
+      for (let nested = index + 1; nested < lines.length; nested += 1) {
+        const field = /^[ \t]+(scope|expires|reason|file):\s*(.*?)\s*$/i.exec(lines[nested]);
+        if (!field) break;
+        if (field[1].toLowerCase() === "scope") progress.bypass = field[2].toLowerCase();
+        if (field[1].toLowerCase() === "file") progress.file = field[2];
+      }
+    }
+    const file = /^File:\s*(.*?)\s*$/.exec(line);
+    if (file) progress.file = file[1];
     const praxis = /^Praxis:\s*(on|off|choosing)\s*$/i.exec(line);
     if (praxis) progress.praxis = praxis[1].toLowerCase();
   }
@@ -73,7 +87,29 @@ export function gateEdit(progress, filePath, root) {
   if (progress.praxis === "off" || progress.status === "off") return { permission: "allow" };
   if (progress.status !== "pending") return { permission: "allow" };
   if (isNotesFile(filePath, root)) return { permission: "allow" };
-  if (progress.bypass === "one-step") return { permission: "allow" };
+  const scoped = bypassDecision(progress, filePath, root);
+  if (scoped === "allow") return { permission: "allow" };
+  if (scoped === "file") {
+    return {
+      permission: "deny",
+      user_message: `Praxis is allowing edits only in ${progress.file}.`,
+      agent_message: `This bypass is one-file. Edit only ${progress.file}.`,
+    };
+  }
+  if (scoped === "docs") {
+    return {
+      permission: "deny",
+      user_message: "This bypass allows documentation edits only.",
+      agent_message: "This bypass is documentation-only. Edit markdown or text docs, not source.",
+    };
+  }
+  if (scoped === "tests") {
+    return {
+      permission: "deny",
+      user_message: "This bypass allows test edits only.",
+      agent_message: "This bypass is test-only. Edit a test file, not application source.",
+    };
+  }
   const topic = progress.topic.length > 0 ? progress.topic : "the open question";
   return {
     permission: "deny",
@@ -82,8 +118,46 @@ export function gateEdit(progress, filePath, root) {
   };
 }
 
+function bypassDecision(progress, filePath, root) {
+  const scope = progress.bypass === "one-step" ? "one-build-step" : progress.bypass;
+  if (scope === "one-build-step" || scope === "one-edit") return "allow";
+  if (scope === "one-file") {
+    return progress.file.length === 0 || samePath(root, progress.file, filePath) ? "allow" : "file";
+  }
+  if (scope === "documentation-only") return isDocumentation(filePath) ? "allow" : "docs";
+  if (scope === "test-only") return classifyPath(filePath) === "test" ? "allow" : "tests";
+  return "deny";
+}
+
+function relativeEdit(root, filePath) {
+  const relative = path.relative(root, path.resolve(root, filePath));
+  if (relative.startsWith("..") || path.isAbsolute(relative)) return filePath.split(path.sep).join("/");
+  return relative.split(path.sep).join("/");
+}
+
+function samePath(root, left, right) {
+  if (left.length === 0 || right.length === 0) return false;
+  return path.resolve(root, left) === path.resolve(root, right);
+}
+
+function isDocumentation(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return ext === ".md" || ext === ".mdc" || ext === ".txt" || ext === ".rst" || ext === ".adoc";
+}
+
 export function clearOneStep(text) {
   return text.replace(/^Bypass:[ \t]*one-step[ \t]*$/gim, "Bypass: none");
+}
+
+export function clearBypass(text) {
+  const inline = text.replace(new RegExp(`^Bypass:[ \\t]*(${BYPASS_SCOPES.replace("none|", "")})[ \\t]*$`, "gim"), "Bypass: none");
+  const block = inline.replace(/^Bypass:[ \t]*\r?\n(?:[ \t]+(?:scope|expires|reason|file):[^\n]*\r?\n)*/gim, "Bypass: none\n");
+  return block.replace(/^File:[ \t]*.*(?:\r?\n)?/gim, "");
+}
+
+export function rememberFile(text, filePath) {
+  if (/^File:[ \t]/m.test(text)) return text;
+  return `${text.replace(/\s*$/, "")}\nFile: ${filePath.split(path.sep).join("/")}\n`;
 }
 
 export function editPath(input) {
@@ -240,7 +314,7 @@ function respond(command, input) {
   }
   if (command === "stop") {
     if (!isPluginProject(root) && notesActive(root, progress)) {
-      if (progress.bypass === "one-step") writeFileSync(progressFile(root), clearOneStep(text), "utf8");
+      if (progress.bypass !== "none") writeFileSync(progressFile(root), clearBypass(text), "utf8");
       writeRecord(root);
       recordPractice(root);
     }
@@ -253,6 +327,12 @@ function respond(command, input) {
   if (notes?.permission === "deny") return notes;
   const gated = gateEdit(progress, filePath, root);
   if (gated.permission === "deny") return gated;
+  if (!isNotesFile(filePath, root) && filePath.length > 0) {
+    if (progress.bypass === "one-edit") writeFileSync(progressFile(root), clearBypass(text), "utf8");
+    else if (progress.bypass === "one-file" && progress.file.length === 0) {
+      writeFileSync(progressFile(root), rememberFile(text, relativeEdit(root, filePath)), "utf8");
+    }
+  }
   return protectMarkedEdit(root, input);
 }
 

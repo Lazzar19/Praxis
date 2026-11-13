@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, it } from "node:test";
-import { clearOneStep, gateEdit, parseProgress, sessionContext } from "../hooks/praxis.mjs";
+import { clearBypass, clearOneStep, gateEdit, parseProgress, sessionContext } from "../hooks/praxis.mjs";
 
 const directories: string[] = [];
 const hook = path.resolve("hooks/praxis.mjs");
@@ -124,5 +124,48 @@ describe("edit gate", () => {
 
     const again = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts" }, cwd: project });
     assert.equal((again as { permission: string }).permission, "deny");
+  });
+
+  it("closes one-edit after that edit", () => {
+    const project = tempProject();
+    note(project, "Status: pending\nTopic: where the data lives\nBypass: one-edit\n");
+    const allowed = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts" }, cwd: project });
+    assert.equal((allowed as { permission: string }).permission, "allow");
+    assert.match(readFileSync(path.join(project, ".praxis", "progress.md"), "utf8"), /Bypass: none/);
+    const denied = run("gate", project, { tool_name: "Write", tool_input: { path: "src/db.ts" }, cwd: project });
+    assert.equal((denied as { permission: string }).permission, "deny");
+  });
+
+  it("keeps one-file on the first file it touches", () => {
+    const project = tempProject();
+    note(project, "Status: pending\nTopic: where the data lives\nBypass:\n  scope: one-file\n  expires: stop\n  reason: fix the title\n");
+    const allowed = run("gate", project, { tool_name: "StrReplace", tool_input: { path: "src/app.ts" }, cwd: project });
+    assert.equal((allowed as { permission: string }).permission, "allow");
+    assert.match(readFileSync(path.join(project, ".praxis", "progress.md"), "utf8"), /File: src\/app\.ts/);
+    const again = run("gate", project, { tool_name: "StrReplace", tool_input: { path: "src/app.ts" }, cwd: project });
+    assert.equal((again as { permission: string }).permission, "allow");
+    const denied = run("gate", project, { tool_name: "Write", tool_input: { path: "src/db.ts" }, cwd: project }) as { permission: string; user_message?: string };
+    assert.equal(denied.permission, "deny");
+    assert.match(denied.user_message ?? "", /src\/app\.ts/);
+    run("stop", project, {});
+    assert.match(readFileSync(path.join(project, ".praxis", "progress.md"), "utf8"), /Bypass: none/);
+    assert.equal(clearBypass("Bypass:\n  scope: one-file\n  expires: stop\n  reason: fix the title\nFile: src/app.ts\n"), "Bypass: none\n");
+  });
+
+  it("allows documentation only, or tests only", () => {
+    const project = tempProject();
+    note(project, "Status: pending\nTopic: where the data lives\nBypass:\n  scope: documentation-only\n  expires: stop\n  reason: fix the title\n");
+    const docs = run("gate", project, { tool_name: "Write", tool_input: { path: "README.md" }, cwd: project });
+    assert.equal((docs as { permission: string }).permission, "allow");
+    const source = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts" }, cwd: project }) as { permission: string; user_message?: string };
+    assert.equal(source.permission, "deny");
+    assert.match(source.user_message ?? "", /documentation edits only/);
+
+    note(project, "Status: pending\nTopic: where the data lives\nBypass:\n  scope: test-only\n  expires: stop\n  reason: add the missing test\n");
+    const testFile = run("gate", project, { tool_name: "Write", tool_input: { path: "tests/app.test.ts" }, cwd: project });
+    assert.equal((testFile as { permission: string }).permission, "allow");
+    const app = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts" }, cwd: project }) as { permission: string; user_message?: string };
+    assert.equal(app.permission, "deny");
+    assert.match(app.user_message ?? "", /test edits only/);
   });
 });
