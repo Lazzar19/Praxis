@@ -148,6 +148,12 @@ Update `README.md` and `docs/demo-session.mjs` to one round: their sentence, one
 
 Done when the demo script finishes and the README no longer says the interview opens as five option lists.
 
+### Slice 10 — a production concern only when it is raised
+
+When their sentence, the prompt, or the map raises one production concern, that concern is one debate round. The concerns are authentication, authorization, input validation, secrets, error handling, logging, backups, rate limiting, privacy, rollback, monitoring, and data retention. A small project that does not raise them does not get the list.
+
+Done when the shipping rule names that list and says not to run it on a small project that does not raise it.
+
 ---
 
 ## Later
@@ -163,4 +169,5 @@ Done when the demo script finishes and the README no longer says the interview o
 - `hooks/record.mjs` and `templates/` — the record, slice 7
 - `hooks/praxis.mjs` — resume the open beat, slice 8
 - `README.md` and `docs/demo-session.mjs` — slice 9
+- `rules/praxis.mdc` — production concerns, slice 10
 - `.praxis/` in the student project — notes, not the plugin source

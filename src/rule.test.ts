@@ -24,6 +24,9 @@ describe("shipping interview rule", () => {
     assert.match(rule, /Who may see or change it/);
     assert.match(rule, /How it ships/);
     assert.match(rule, /not a debate/);
+    assert.match(rule, /Do not run this list on a small project/);
+    assert.match(rule, /authentication/);
+    assert.match(rule, /data retention/);
   });
 
   it("keeps their words, the retry, and the marked function", () => {

@@ -22,6 +22,8 @@ Every other important decision is one round, in this order, one beat at a time. 
 
 Also debate a decision their prompt opens that those four do not cover.
 
+When their sentence, the prompt, or the map raises one of these, debate that one too. Do not run this list on a small project that does not raise them: authentication, authorization, input validation, secrets, error handling, logging, backups, rate limiting, privacy, rollback, monitoring, data retention.
+
 1. Their sentence. Restate the architecture they already gave, in their words. If the prompt never states one, ask only for that sentence. Their sentence comes before any option list.
 2. One problem. Name one concrete failure in that sentence, in this project. Ask how they would handle it. Keep their reply as they wrote it.
 3. One proposal beside that sentence. Say what problem it solves and what it costs. Label it as your proposal. It is not their decision. Then call the AskQuestion tool once. Do not ask the choice in plain text. The options are keep theirs, take the proposal, or mix the two. Wait for the selected answer.
