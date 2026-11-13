@@ -23,7 +23,7 @@ export function parseDecisions(text) {
 
 export function renderDecisions(notes, templates) {
   const parsed = parseDecisions(notes);
-  const entries = parsed.decisions.map((decision, index) => withPrediction(fill(templates.entry, {
+  const entries = parsed.decisions.map((decision, index) => withPrediction(withDebate(fill(templates.entry, {
     number: String(index + 1),
     title: decision.topic,
     prompt: decision.context,
@@ -31,7 +31,7 @@ export function renderDecisions(notes, templates) {
     choice: decision.choice,
     reason: decision.reason,
     date: decision.date,
-  }), decision.prediction));
+  }), decision), decision.prediction));
   return fill(templates.page, {
     goal: parsed.goal,
     entries: entries.join("\n\n"),
@@ -112,30 +112,61 @@ export function writeRecord(root) {
   return true;
 }
 
+const FIELD_LABELS = ["Topic", "Context", "Their sentence", "Problem", "Reply", "Proposal", "Options", "Choice", "Date", "Reason", "Prediction"];
+
 function parseBlock(block) {
   const body = block.split(/^## End[ \t]*$/m)[0] ?? "";
-  const reasonAt = body.search(/^Reason:\r?\n/m);
-  if (reasonAt < 0) return null;
-  const head = body.slice(0, reasonAt);
-  const reasonAndRest = body.slice(reasonAt).replace(/^Reason:\r?\n/, "");
-  const predictionAt = reasonAndRest.search(/^Prediction:\r?\n/m);
-  const reason = (predictionAt >= 0 ? reasonAndRest.slice(0, predictionAt) : reasonAndRest).replace(/\n$/, "");
-  const prediction = predictionAt >= 0
-    ? reasonAndRest.slice(predictionAt).replace(/^Prediction:\r?\n/, "").replace(/\n$/, "")
-    : "";
-  const field = (name) => {
-    const match = new RegExp(`^${name}:[ \t]*(.*)$`, "m").exec(head);
-    return match ? match[1] : "";
-  };
+  if (!/^Reason:[ \t]*/m.test(body)) return null;
   return {
-    topic: field("Topic"),
-    context: field("Context"),
-    options: field("Options"),
-    choice: field("Choice"),
-    date: field("Date"),
-    reason,
-    prediction,
+    topic: fieldValue(body, "Topic"),
+    context: fieldValue(body, "Context"),
+    sentence: debateValue(fieldValue(body, "Their sentence")),
+    problem: debateValue(fieldValue(body, "Problem")),
+    reply: debateValue(fieldValue(body, "Reply")),
+    proposal: debateValue(fieldValue(body, "Proposal")),
+    options: fieldValue(body, "Options"),
+    choice: fieldValue(body, "Choice"),
+    date: fieldValue(body, "Date"),
+    reason: fieldValue(body, "Reason"),
+    prediction: fieldValue(body, "Prediction"),
   };
+}
+
+function debateValue(value) {
+  return /^none[ \t]*$/i.test(value) ? "" : value;
+}
+
+function fieldValue(body, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(`^${escaped}:[ \\t]*(.*)$`, "m").exec(body);
+  if (!match) return "";
+  const inline = match[1];
+  const rest = body.slice(match.index + match[0].length).replace(/^\r?\n/, "");
+  const next = nextFieldIndex(rest);
+  let tail = (next === -1 ? rest : rest.slice(0, next)).replace(/\n$/, "");
+  if (inline.length > 0 && tail.length > 0) return `${inline}\n${tail}`;
+  if (inline.length > 0) return inline;
+  return tail;
+}
+
+function nextFieldIndex(text) {
+  let index = -1;
+  for (const name of FIELD_LABELS) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match = new RegExp(`^${escaped}:[ \\t]*`, "m").exec(text);
+    if (match && (index === -1 || match.index < index)) index = match.index;
+  }
+  return index;
+}
+
+function withDebate(entry, decision) {
+  const lines = [];
+  for (const [label, key] of [["Their sentence", "sentence"], ["Problem", "problem"], ["Reply", "reply"], ["Proposal", "proposal"]]) {
+    const value = decision[key];
+    if (typeof value === "string" && value.length > 0) lines.push(`- **${label}:** ${value}`);
+  }
+  if (lines.length === 0) return entry;
+  return `${entry.replace(/\s*$/, "")}\n${lines.join("\n")}`;
 }
 
 function withPrediction(entry, prediction) {

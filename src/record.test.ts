@@ -81,6 +81,60 @@ describe("decision record", () => {
     assert.match(decisions, /Project goal: Notes API/);
     assert.match(decisions, /## 1\. Their level/);
     assert.match(decisions, /## 5\. How it ships/);
+    assert.doesNotMatch(decisions, /\*\*Their sentence:\*\*/);
+  });
+
+  it("exports a debate round verbatim and omits an empty level round", () => {
+    const project = tempProject();
+    const sentence = "  One file on the classroom computer.  ";
+    const problem = "A classmate opens that file and reads someone else's notes.";
+    const reply = "I would split the file later.\n{{goal}} stays in the reply.";
+    const proposal = "A database on the same machine, with one account per student.";
+    const source = `Goal: Notes API
+
+## Decision
+Topic: Their level
+Context: How much to explain.
+Options: first time | has shipped
+Choice: first time
+Date: 2026-11-13
+Their sentence:
+none
+Problem:
+none
+Reply:
+none
+Proposal:
+none
+Reason:
+I have not built an API before.
+## End
+
+## Decision
+Topic: The stack
+Context: What has to hold the notes.
+Options: keep theirs | take the proposal | mix the two
+Choice: mix the two
+Date: 2026-11-13
+Their sentence:
+${sentence}
+Problem:
+${problem}
+Reply:
+${reply}
+Proposal:
+${proposal}
+Reason:
+I want separate notes, but not accounts on the first day.
+## End
+`;
+    writeFileSync(path.join(project, ".praxis", "decisions.md"), source);
+    run("stop", project);
+    const decisions = readFileSync(path.join(project, "DECISIONS.md"), "utf8");
+    const level = decisions.split(/^## /m)[1] ?? "";
+    const stack = decisions.split(/^## /m)[2] ?? "";
+    assert.doesNotMatch(level, /Their sentence|Problem:|Reply:|Proposal:/);
+    for (const field of [sentence, problem, reply, proposal]) assert.ok(stack.includes(field), field);
   });
 
   it("writes a map of existing code before asking a new question", () => {
