@@ -95,6 +95,7 @@ try {
   if (!ctx1.includes("AskQuestion")) fail("session missing AskQuestion guidance");
   if (!ctx1.includes("turn Praxis on")) fail("session missing the on/off choice");
   if (!ctx1.includes("leave it off")) fail("session missing the off option");
+  if (!ctx1.includes("take their sentence before offering options")) fail("session missing their sentence");
   console.log("stdout JSON keys:", Object.keys(session1).join(", "));
   console.log(trimBlock(ctx1));
   if (existsSync(path.join(project, ".praxis"))) fail(".praxis was created before a choice");
@@ -113,6 +114,10 @@ try {
   console.log(JSON.stringify(denied, null, 2));
 
   section("3 Model appends decision + sets confirmed (simulated)");
+  const sentence = "A JSON file on the family laptop is enough, with no accounts.";
+  const problem = "Someone else on that laptop can open the file and change an expense.";
+  const reply = "I would hide the file, but they can still find it.";
+  const proposal = "SQLite on the same laptop, one file the app owns, still no accounts.";
   const reason =
     "I want SQL queries and it works offline for the family budget.";
   const prediction = "saves a new expense and returns its generated id";
@@ -121,9 +126,17 @@ try {
 ## Decision
 Topic: ${TOPIC}
 Context: Where family expenses are stored and queried.
-Options: SQLite file | JSON file on disk | Hosted database
-Choice: SQLite file
-Date: 2026-11-10
+Their sentence:
+${sentence}
+Problem:
+${problem}
+Reply:
+${reply}
+Proposal:
+${proposal}
+Options: keep theirs | take the proposal | mix the two
+Choice: take the proposal
+Date: 2026-11-13
 Reason:
 ${reason}
 Prediction:
@@ -153,6 +166,9 @@ ${prediction}
   const decisionsMd = readFileSync(path.join(project, "DECISIONS.md"), "utf8");
   if (!decisionsMd.includes(reason)) fail("DECISIONS.md missing reason");
   if (!decisionsMd.includes(prediction)) fail("DECISIONS.md missing prediction");
+  for (const field of [sentence, problem, reply, proposal]) {
+    if (!decisionsMd.includes(field)) fail(`DECISIONS.md missing ${field}`);
+  }
   console.log(trimBlock(decisionsMd));
   if (!existsSync(path.join(project, ".praxis", "marks.md"))) {
     fail("marks.md missing after stop");

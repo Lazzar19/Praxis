@@ -1,4 +1,4 @@
-Student project: /tmp/praxis-demo-expense-VYT1sV
+Student project: /tmp/praxis-demo-expense-4oEAQA
 Hook binary: /home/lazzar20/Projects/Praxis/hooks/praxis.mjs
 
 === 1 session (new chat → on or off, no notes yet) ===
@@ -6,17 +6,17 @@ Hook binary: /home/lazzar20/Projects/Praxis/hooks/praxis.mjs
 stdout JSON keys: additional_context
 This project has not chosen Praxis yet. Do not ask the student to run a command.
 
-Call AskQuestion once, before any project code and before the floor. One question, two options: turn Praxis on for this project, or leave it off. Do not ask in plain text. Do not create .praxis before they answer.
+Call AskQuestion once, before any project code and before the debate. One question, two options: turn Praxis on for this project, or leave it off. Do not ask in plain text. Do not create .praxis before they answer.
 
 If they choose off, write these lines to .praxis/progress.md and do not ask another question. That write is refused, and .praxis is not kept:
 Praxis: off
 Status: off
 Bypass: none
 
-If they choose on, write these lines, then ask the floor one question at a time. Notes begin with that file:
+If they choose on, write these lines, then take their sentence before offering options. Notes begin with that file:
 Praxis: on
 Status: pending
-Topic: the floor
+Topic: their sentence
 Bypass: none
 
 === 2 gate Write (leave Praxis off → no directory) ===
@@ -24,7 +24,7 @@ Bypass: none
 {
   "permission": "deny",
   "user_message": "Praxis is off for this project. No notes are kept.",
-  "agent_message": "They left Praxis off. Do not create .praxis and do not write notes. If they later ask to turn Praxis on, write .praxis/progress.md with Praxis: on and Status: pending, then ask the floor with AskQuestion, one question at a time."
+  "agent_message": "They left Praxis off. Do not create .praxis and do not write notes. If they later ask to turn Praxis on, write .praxis/progress.md with Praxis: on and Status: pending, then take their sentence before offering options."
 }
 
 === 3 Model appends decision + sets confirmed (simulated) ===
@@ -35,14 +35,20 @@ Goal: Family expense tracker
 ## Decision
 Topic: Where the data lives
 Context: Where family expenses are stored and queried.
-Options: SQLite file | JSON file on disk | Hosted database
-Choice: SQLite file
-Date: 2026-11-10
+Their sentence:
+A JSON file on the family laptop is enough, with no accounts.
+Problem:
+Someone else on that laptop can open the file and change an expense.
+Reply:
+I would hide the file, but they can still find it.
+Proposal:
+...
 Reason:
 I want SQL queries and it works offline for the family budget.
 Prediction:
 saves a new expense and returns its generated id
 ## End
+
 
 === 4 stop (export DECISIONS.md + scan marks) ===
 
@@ -50,18 +56,22 @@ saves a new expense and returns its generated id
 
 Project goal: Family expense tracker
 
-One entry per decision: context, options considered, choice, reason, date.
+One entry per decision: context, options considered, choice, reason, date. A debate round also keeps their sentence, the problem, their reply, and the proposal. A level question omits those four.
 
 ## 1. Where the data lives
 
 - **Context:** Where family expenses are stored and queried.
 - **Options considered:**
-- SQLite file
-- JSON file on disk
-- Hosted database
-- **Choice:** SQLite file
+- keep theirs
+- take the proposal
+- mix the two
+- **Choice:** take the proposal
 - **Reason:** I want SQL queries and it works offline for the family budget.
-- **Date:** 2026-11-10
+- **Date:** 2026-11-13
+- **Their sentence:** A JSON file on the family laptop is enough, with no accounts.
+- **Problem:** Someone else on that laptop can open the file and change an expense.
+- **Reply:** I would hide the file, but they can still find it.
+- **Proposal:** SQLite on the same laptop, one file the app owns, still no accounts.
 - **Prediction:** saves a new expense and returns its generated id
 
 .praxis/marks.md:
@@ -84,7 +94,7 @@ Function: saveExpense
 # Review
 
 ## Where the data lives
-Choice: SQLite file
+Choice: take the proposal
 Reason: I want SQL queries and it works offline for the family budget.
 Prediction: saves a new expense and returns its generated id
 Function: saveExpense in src/expenses.ts

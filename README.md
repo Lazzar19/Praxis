@@ -4,7 +4,7 @@
 
 Praxis is a Cursor plugin for chat-first learning. A student describes what they want to build in the Agent chat they already have open. The plugin asks them to choose, one decision at a time, before that choice becomes code.
 
-The questions use Cursor's **AskQuestion** control. Each question is written from the student's prompt. Options are not a fixed quiz. A recommendation is only a suggestion; the student selects an option.
+The student states the architecture in their own words. Praxis names one problem in that sentence and puts one proposal beside it. The student then chooses, with **AskQuestion**: keep theirs, take the proposal, or mix the two. That choice is the decision.
 
 Display name: **Praxis**. Package name: `learn-coach`. There is no setup command inside a student project.
 
@@ -20,14 +20,16 @@ Family expense tracker — shapes match [`rules/praxis.mdc`](rules/praxis.mdc); 
 
 | Turn | Who | Content |
 |------|-----|---------|
-| 1 | Student | "Build an expense tracker for our family." |
-| 2 | Agent (AskQuestion) | **Where the data lives** — options include SQLite file, JSON file on disk, hosted database; explains tradeoffs; recommends SQLite for structured queries on one device. |
-| 3 | Student | Chooses SQLite; reason: SQL queries and offline use for the family budget. |
-| 4 | Agent | Asks for one prediction sentence before code. |
-| 5 | Student | "It saves a new expense and returns its generated id." |
-| 6 | Agent | Writes scaffolding and leaves `saveExpense` with `TODO(praxis:Where the data lives)` in the body. **Do not ask Praxis to remove or implement the marked function.** The marker is the boundary between generated scaffolding and the student's implementation. |
-| 7 | Student | Implements `saveExpense` in the editor. |
-| 8 | Agent | Reviews against the prediction; records `Matched: yes` or `no` in `.praxis/review.md`. |
+| 1 | Student | "Build an expense tracker for our family. A JSON file on the laptop is enough, with no accounts." |
+| 2 | Agent | Restates that sentence. One problem: someone else on that laptop can open the file and change an expense. |
+| 3 | Student | "I would hide the file, but they can still find it." |
+| 4 | Agent (AskQuestion) | Proposal beside that sentence: SQLite on the same laptop, still no accounts. Options: keep theirs, take the proposal, or mix the two. |
+| 5 | Student | Takes the proposal. Reason: SQL queries and offline use for the family budget. |
+| 6 | Agent | Asks for one prediction sentence before code. |
+| 7 | Student | "It saves a new expense and returns its generated id." |
+| 8 | Agent | Writes scaffolding and leaves `saveExpense` with `TODO(praxis:Where the data lives)` in the body. **Do not ask Praxis to remove or implement the marked function.** The marker is the boundary between generated scaffolding and the student's implementation. |
+| 9 | Student | Implements `saveExpense` in the editor. |
+| 10 | Agent | Reviews against the prediction; records `Matched: yes` or `no` in `.praxis/review.md`. |
 
 The **topic string inside the marker** must match the decision block's `Topic:` line (`Where the data lives` in the hook demo below).
 
@@ -43,7 +45,7 @@ The script creates a throwaway project under `/tmp`, drives `session`, `gate`, a
 
 Full stdout from one run is in [`docs/demo-run.txt`](docs/demo-run.txt) (paths under `/tmp/…` vary per run).
 
-Trimmed excerpts (from a real run; `…` omits repeated floor guidance):
+Trimmed excerpts (from a real run; `…` omits the rest of the on/off guidance):
 
 ```
 === 1 session ===
@@ -67,7 +69,7 @@ Matched: yes
 
 ## Example session
 
-The [Demo](#demo) table is the narrative version of the same scenario: **Where the data lives** → SQLite → prediction → marker → student code → review. The hook demo uses this stub (same pattern as [`src/review.test.ts`](src/review.test.ts)):
+The [Demo](#demo) table is the narrative version of one round: their sentence, one problem, one proposal, then the choice. The hook demo uses this stub (same pattern as [`src/review.test.ts`](src/review.test.ts)):
 
 ```typescript
 export function saveExpense(): number {
@@ -122,11 +124,11 @@ robocopy $Source $Dest /MIR /XD node_modules .git dist
 
 ## What the student meets
 
-Build requests start the interview: all five floor topics (level, stack, where data lives, who may see or change it, how it ships), each as its own AskQuestion, plus extras the prompt opens. One answer does not close two topics. Options are explained in terms of this project.
+A build request starts a debate, one round at a time. Praxis takes their architecture sentence, names one problem in it, and puts one proposal beside that sentence. They keep theirs, take the proposal, or mix the two. Level is one short question and is not a debate. The stack, where data lives, who may see or change it, and how it ships are the other rounds, plus a decision their prompt opens. One answer does not close two topics.
 
-Reasons are stored verbatim, with one retry if the reason fits another option.
+Reasons, the reply to the problem, and the proposal are stored verbatim. A reason that fits another option gets one retry.
 
-The first question in a new project is a choice: turn Praxis on, or leave it off. Off keeps no `.praxis` directory and no notes. Asking in chat to turn Praxis on is when that directory and the floor begin.
+The first question in a new project is a choice: turn Praxis on, or leave it off. Off keeps no `.praxis` directory and no notes. Asking in chat to turn Praxis on is when that directory and the debate begin.
 
 **Skips:** named small edits; **one-step bypass** for a single step without questions (resets on stop).
 
@@ -137,8 +139,8 @@ After confirmation: one prediction sentence, then code with one `TODO(praxis:<to
 ## Session lifecycle
 
 1. Student opens a **new** Agent chat and asks to build or change something substantial.
-2. **sessionStart** hook runs. A project with no choice is asked on or off, and `.praxis` is not created yet. Off stays quiet with no notes. On writes `.praxis/progress.md` and continues into the floor.
-3. Model uses **AskQuestion** for floor topics and follow-ons (rule); appends confirmed blocks to `.praxis/decisions.md`.
+2. **sessionStart** hook runs. A project with no choice is asked on or off, and `.praxis` is not created yet. Off stays quiet with no notes. On writes `.praxis/progress.md` and the next beat is their sentence, before any option list.
+3. Model runs one debate round, then **AskQuestion** for keep, take, or mix. Confirmed blocks go to `.praxis/decisions.md`.
 4. While **`Status: pending`**, **preToolUse** denies project file edits (notes and one-step bypass excepted).
 5. Student confirms a step; model records **Prediction** and sets progress to **`confirmed`** when appropriate.
 6. Model writes the step and leaves the **TODO(praxis:…)** marker in one function.
@@ -149,8 +151,8 @@ After confirmation: one prediction sentence, then code with one `TODO(praxis:<to
 
 ```mermaid
 flowchart LR
-  A[Build request] --> B{Skip interview?}
-  B -->|no| C[AskQuestion + notes]
+  A[Build request] --> B{Skip debate?}
+  B -->|no| C[Sentence, problem, proposal]
   C --> D[Confirm + prediction]
   D --> E[Scaffold + marker]
   E --> F[Student implements]
@@ -173,7 +175,7 @@ student-project/
 ```text
 student-project/
 ├── .praxis/
-│   ├── progress.md    # Status: pending, floor topic
+│   ├── progress.md    # Status: pending, open beat
 │   └── map.md         # Parts + Unknowns from listCodeFiles
 └── src/db.ts
 ```
@@ -226,7 +228,7 @@ Manual edits under `.praxis/` change what the **session** hook injects on the ne
 
 | Piece | File | Role |
 |---|---|---|
-| Rule | [`rules/praxis.mdc`](rules/praxis.mdc) | Interview, floor, prediction, marker contract |
+| Rule | [`rules/praxis.mdc`](rules/praxis.mdc) | Debate, prediction, marker contract |
 | Session / gate | [`hooks/praxis.mjs`](hooks/praxis.mjs) | Context, `Status: pending` gate, one-step bypass |
 | Record | [`hooks/record.mjs`](hooks/record.mjs) | `syncMap`, `DECISIONS.md` from notes |
 | Review | [`hooks/review.mjs`](hooks/review.mjs) | Marker guard, `marks.md`, `report.md` |
