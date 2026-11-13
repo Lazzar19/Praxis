@@ -239,7 +239,7 @@ Manual edits under `.praxis/` change what the **session** hook injects on the ne
 
 ### Map behavior
 
-[`syncMap()`](hooks/record.mjs) adds each scanned file as bare `- path` under **Parts** and also under **Unknowns** until Parts has a description line (rule text differs; hook behavior is what tests assert). **Limits:** depth 12, max 40 files; skips `node_modules`, `dist`, `.git`, `.praxis`; extensions listed in `record.mjs`. No map without matching sources or in the plugin repo.
+[`syncMap()`](hooks/record.mjs) adds each scanned file under **Parts** and also under **Unknowns** until Parts has a description that is not only a role hint. A known file gets a role hint such as `data access`, `API boundary`, `test`, `deployment`, or `package manager`. **Limits:** depth 12, max 40 files, with role files kept ahead of plain source; skips `node_modules`, `dist`, `.git`, `.praxis`. No map without matching files or in the plugin repo.
 
 ## Known limitations
 

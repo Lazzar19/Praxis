@@ -6,7 +6,10 @@ const SOURCE_EXT = new Set([
   ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".go", ".java", ".rs", ".rb", ".php", ".cs", ".cpp", ".c", ".h", ".swift", ".kt",
 ]);
 
-export const MAP_NOTE = "A map of the existing code is in .praxis/map.md. Mark anything you could not see under Unknowns before asking a new question.";
+export const MAP_NOTE = "A map of the existing code is in .praxis/map.md. A role is a hint. Mark anything you could not see under Unknowns before asking a new question. Debate only the parts this request changes.";
+
+const ROLES = new Set(["entry point", "test", "package manager", "framework", "configuration", "API boundary", "data access", "deployment"]);
+const FRAMEWORKS = ["next", "react", "vue", "svelte", "express", "fastify", "@nestjs/core", "django", "flask"];
 
 export function isSourcePath(filePath) {
   return SOURCE_EXT.has(path.extname(filePath).toLowerCase());
@@ -38,10 +41,33 @@ export function renderDecisions(notes, templates) {
   });
 }
 
+export function classifyPath(file) {
+  const norm = file.split("\\").join("/").toLowerCase();
+  const base = norm.slice(norm.lastIndexOf("/") + 1);
+  if (/(^|\/)(tests?|__tests__|spec)\//.test(norm) || /\.(test|spec)\.[a-z0-9]+$/.test(base)) return "test";
+  if (base === "dockerfile" || base.startsWith("docker-compose") || base === "compose.yml" || base === "compose.yaml" || base === "render.yaml" || base === "fly.toml" || base === "vercel.json" || base === "netlify.toml" || base === "procfile" || norm.includes(".github/workflows/")) return "deployment";
+  if (/(^|\/)(routes?|controllers?|handlers?|api)\//.test(norm)) return "API boundary";
+  if (/(^|\/)(db|database|models?|repositories|data)\//.test(norm) || /^(db|database|schema)\./.test(base) || base === "schema.prisma") return "data access";
+  if (base === "package.json" || base === "package-lock.json" || base === "pnpm-lock.yaml" || base === "yarn.lock" || base === "go.mod" || base === "cargo.toml" || base === "pyproject.toml" || base === "requirements.txt" || base === "pom.xml" || base === "composer.json" || base === "gemfile") return "package manager";
+  if (base.endsWith(".config.js") || base.endsWith(".config.ts") || base.endsWith(".config.mjs") || base === "tsconfig.json" || base === "jsconfig.json" || base === ".env.example") return "configuration";
+  if (/^(main|index|app|server)\.(ts|tsx|js|jsx|mjs|py|go|rb|php|java|kt)$/.test(base)) return "entry point";
+  return "";
+}
+
+export function selectMapFiles(files) {
+  const unique = [...new Set(files)];
+  unique.sort((left, right) => {
+    const order = (classifyPath(left) ? 0 : 1) - (classifyPath(right) ? 0 : 1);
+    return order !== 0 ? order : left.localeCompare(right);
+  });
+  return { files: unique.slice(0, 40), truncated: unique.length > 40 };
+}
+
 export function listCodeFiles(root) {
-  const found = [];
+  const roleFiles = [];
+  const plain = [];
   function walk(directory, depth) {
-    if (depth > 12 || found.length > 40) return;
+    if (depth > 12 || (roleFiles.length >= 40 && plain.length >= 40)) return;
     let entries;
     try {
       entries = readdirSync(directory, { withFileTypes: true });
@@ -49,21 +75,39 @@ export function listCodeFiles(root) {
       return;
     }
     for (const entry of entries) {
-      if (found.length > 40) return;
+      if (roleFiles.length >= 40 && plain.length >= 40) return;
       if (entry.name === "node_modules" || entry.name === "dist" || entry.name === ".git" || entry.name === ".praxis") continue;
       const full = path.join(directory, entry.name);
       if (entry.isDirectory()) walk(full, depth + 1);
-      else if (SOURCE_EXT.has(path.extname(entry.name))) {
-        found.push(path.relative(root, full).split(path.sep).join("/"));
+      else {
+        const relative = path.relative(root, full).split(path.sep).join("/");
+        const role = classifyPath(relative);
+        if (role.length > 0) {
+          if (roleFiles.length < 40) roleFiles.push(relative);
+        } else if (SOURCE_EXT.has(path.extname(entry.name)) && plain.length < 40) {
+          plain.push(relative);
+        }
       }
     }
   }
   walk(root, 0);
-  found.sort();
-  return { files: found.slice(0, 40), truncated: found.length > 40 };
+  const selected = selectMapFiles([...roleFiles, ...plain]);
+  const roles = {};
+  if (selected.files.includes("package.json")) roles["package.json"] = packageRole(root);
+  return { files: selected.files, roles, truncated: selected.truncated };
 }
 
-export function syncMap(existing, files, truncated = false) {
+function packageRole(root) {
+  let text = "";
+  try {
+    text = readFileSync(path.join(root, "package.json"), "utf8").toLowerCase();
+  } catch {
+    return "package manager";
+  }
+  return FRAMEWORKS.some((name) => text.includes(`"${name}"`)) ? "package manager, framework" : "package manager";
+}
+
+export function syncMap(existing, files, truncated = false, roles = {}) {
   let text = existing.trim().length > 0 ? `${existing.replace(/\s*$/, "")}\n` : "# Map\n\n## Parts\n\n## Unknowns\n";
   if (!/^# Map\b/m.test(text)) text = `# Map\n\n${text}`;
   if (!/^## Parts[ \t]*$/m.test(text)) {
@@ -71,9 +115,10 @@ export function syncMap(existing, files, truncated = false) {
   }
   if (!/^## Unknowns[ \t]*$/m.test(text)) text = `${text.replace(/\s*$/, "")}\n\n## Unknowns\n`;
   for (const file of files) {
-    if (!sectionMentions(text, "Parts", file)) text = insertLine(text, "Parts", `- ${file}`);
+    const line = mapLine(file, roles);
+    if (!sectionMentions(text, "Parts", file)) text = insertLine(text, "Parts", line);
     if (!described(text, file) && !sectionMentions(text, "Unknowns", file)) {
-      text = insertLine(text, "Unknowns", `- ${file}`);
+      text = insertLine(text, "Unknowns", line);
     }
   }
   if (truncated && !text.includes("Further files were not listed.")) {
@@ -89,7 +134,7 @@ export function ensureMap(root) {
   const notes = path.join(root, ".praxis");
   const mapPath = path.join(notes, "map.md");
   const existing = existsSync(mapPath) ? readFileSync(mapPath, "utf8") : "";
-  const next = syncMap(existing, listed.files, listed.truncated);
+  const next = syncMap(existing, listed.files, listed.truncated, listed.roles);
   if (next !== existing) {
     mkdirSync(notes, { recursive: true });
     writeFileSync(mapPath, next);
@@ -179,8 +224,19 @@ export function isPluginProject(root) {
     && existsSync(path.join(root, "rules", "praxis.mdc"));
 }
 
+function mapLine(file, roles) {
+  const role = roles[file] || classifyPath(file);
+  return role.length > 0 ? `- ${file} — ${role}` : `- ${file}`;
+}
+
+function isRoleHint(line, file) {
+  const prefix = `- ${file} — `;
+  if (!line.trim().startsWith(prefix)) return false;
+  return line.trim().slice(prefix.length).split(", ").every((part) => ROLES.has(part));
+}
+
 function described(text, file) {
-  return text.split(/\r?\n/).some((line) => mentionsPath(line, file) && line.trim() !== `- ${file}`);
+  return text.split(/\r?\n/).some((line) => mentionsPath(line, file) && line.trim() !== `- ${file}` && !isRoleHint(line, file));
 }
 
 function sectionMentions(text, heading, file) {

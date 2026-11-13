@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, it } from "node:test";
-import { parseDecisions, renderDecisions, syncMap } from "../hooks/record.mjs";
+import { parseDecisions, renderDecisions, selectMapFiles, syncMap } from "../hooks/record.mjs";
 
 const directories: string[] = [];
 const hook = path.resolve("hooks/praxis.mjs");
@@ -177,6 +177,36 @@ I want separate notes, but not accounts on the first day.
     assert.match(section(map, "Parts"), /- src\/db\.ts/);
     assert.match(section(map, "Unknowns"), /- src\/db\.ts/);
     assert.doesNotMatch(section(map, "Unknowns"), /- src\/app\.ts\s*$/m);
+  });
+
+  it("writes a role hint and still leaves that file unknown", () => {
+    const project = tempProject();
+    mkdirSync(path.join(project, "src/routes"), { recursive: true });
+    mkdirSync(path.join(project, "src/db"), { recursive: true });
+    mkdirSync(path.join(project, "tests"));
+    writeFileSync(path.join(project, "package.json"), "{\"dependencies\":{\"express\":\"4.0.0\"}}\n");
+    writeFileSync(path.join(project, "Dockerfile"), "FROM node:20\n");
+    writeFileSync(path.join(project, "src/routes/expenses.ts"), "export const route = true;\n");
+    writeFileSync(path.join(project, "src/db/expenses.ts"), "export const rows = true;\n");
+    writeFileSync(path.join(project, "tests/expenses.test.ts"), "export const test = true;\n");
+    writeFileSync(path.join(project, ".praxis", "progress.md"), "Praxis: on\nStatus: pending\nTopic: the floor\nBypass: none\n");
+    run("session", project);
+    const map = readFileSync(path.join(project, ".praxis", "map.md"), "utf8");
+    assert.match(map, /package\.json — package manager, framework/);
+    assert.match(map, /Dockerfile — deployment/);
+    assert.match(map, /src\/routes\/expenses\.ts — API boundary/);
+    assert.match(map, /src\/db\/expenses\.ts — data access/);
+    assert.match(map, /tests\/expenses\.test\.ts — test/);
+    assert.match(section(map, "Unknowns"), /Dockerfile — deployment/);
+  });
+
+  it("keeps a role file when plain files would fill the map", () => {
+    const files = Array.from({ length: 41 }, (_, index) => `src/file-${index}.ts`);
+    files.push("Dockerfile");
+    const selected = selectMapFiles(files);
+    assert.equal(selected.files.includes("Dockerfile"), true);
+    assert.equal(selected.files.length, 40);
+    assert.equal(selected.truncated, true);
   });
 
   it("puts a bare part back under Unknowns", () => {
