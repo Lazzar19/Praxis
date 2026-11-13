@@ -37,25 +37,32 @@ export function projectRoot(input, env = process.env) {
 
 export const CHOICE = `This project has not chosen Praxis yet. Do not ask the student to run a command.
 
-Call AskQuestion once, before any project code and before the floor. One question, two options: turn Praxis on for this project, or leave it off. Do not ask in plain text. Do not create .praxis before they answer.
+Call AskQuestion once, before any project code and before the debate. One question, two options: turn Praxis on for this project, or leave it off. Do not ask in plain text. Do not create .praxis before they answer.
 
 If they choose off, write these lines to .praxis/progress.md and do not ask another question. That write is refused, and .praxis is not kept:
 Praxis: off
 Status: off
 Bypass: none
 
-If they choose on, write these lines, then ask the floor one question at a time. Notes begin with that file:
+If they choose on, write these lines, then take their sentence before offering options. Notes begin with that file:
 Praxis: on
 Status: pending
-Topic: the floor
+Topic: their sentence
 Bypass: none`;
 
-export const OFF = `Praxis is off for this project. Do not ask interview questions. Do not create .praxis. If they ask to turn Praxis on, write Praxis: on and Status: pending in .praxis/progress.md, then ask the floor with AskQuestion, one question at a time. Do not ask them to run a command.`;
+export const OFF = `Praxis is off for this project. Do not ask interview questions. Do not create .praxis. If they ask to turn Praxis on, write Praxis: on and Status: pending in .praxis/progress.md, then take their sentence before offering options. Do not ask them to run a command.`;
 
 export function sessionContext(progress) {
   if (progress.status !== "pending") return "";
-  const topic = progress.topic.length > 0 ? progress.topic : "the open question";
-  return `Praxis has an open decision: ${topic}. Continue that question in this chat before writing project code. Do not ask the student to run a command. The note is .praxis/progress.md.`;
+  const topic = progress.topic.length > 0 ? progress.topic : "their sentence";
+  const note = "Do not ask the student to run a command. The note is .praxis/progress.md.";
+  if (/problem/i.test(topic)) {
+    return `Praxis has an open problem: ${topic}. Continue that problem before any option list. ${note}`;
+  }
+  if (/proposal/i.test(topic)) {
+    return `Praxis has an open proposal: ${topic}. Put that proposal beside their sentence, then ask them to keep theirs, take the proposal, or mix the two. ${note}`;
+  }
+  return `Praxis is waiting on ${topic}. Take their sentence before offering options. ${note}`;
 }
 
 export function praxisOn(progress) {
@@ -183,7 +190,7 @@ function refusedOff() {
   return {
     permission: "deny",
     user_message: "Praxis is off for this project. No notes are kept.",
-    agent_message: "They left Praxis off. Do not create .praxis and do not write notes. If they later ask to turn Praxis on, write .praxis/progress.md with Praxis: on and Status: pending, then ask the floor with AskQuestion, one question at a time.",
+    agent_message: "They left Praxis off. Do not create .praxis and do not write notes. If they later ask to turn Praxis on, write .praxis/progress.md with Praxis: on and Status: pending, then take their sentence before offering options.",
   };
 }
 

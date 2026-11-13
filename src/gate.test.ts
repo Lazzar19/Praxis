@@ -71,6 +71,7 @@ describe("edit gate", () => {
     assert.match(context, /AskQuestion/);
     assert.match(context, /turn Praxis on/);
     assert.match(context, /leave it off/);
+    assert.match(context, /take their sentence before offering options/);
     assert.match(context, /Do not ask the student to run a command/);
     assert.equal(existsSync(path.join(project, ".praxis")), false);
     const allowed = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts", contents: "export const started = true;\n" }, cwd: project });
@@ -78,6 +79,17 @@ describe("edit gate", () => {
     const notes = run("gate", project, { tool_name: "Write", tool_input: { path: ".praxis/progress.md", contents: "Praxis: off\nStatus: off\nBypass: none\n" }, cwd: project });
     assert.equal((notes as { permission: string }).permission, "deny");
     assert.equal(existsSync(path.join(project, ".praxis")), false);
+  });
+
+  it("names a pending problem on the next session", () => {
+    const project = tempProject();
+    note(project, "Status: pending\nTopic: the problem\nBypass: none\n");
+    const started = run("session", project, { cwd: project }) as { additional_context?: string };
+    const context = started.additional_context ?? "";
+    assert.match(context, /open problem: the problem/);
+    assert.match(context, /Do not ask the student to run a command/);
+    const denied = run("gate", project, { tool_name: "Write", tool_input: { path: "src/app.ts" }, cwd: project });
+    assert.equal((denied as { permission: string }).permission, "deny");
   });
 
   it("stays quiet after they leave Praxis off and keeps no notes", () => {
