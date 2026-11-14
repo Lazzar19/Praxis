@@ -29,7 +29,7 @@ Family expense tracker — shapes match [`rules/praxis.mdc`](rules/praxis.mdc); 
 | 7 | Student | "It saves a new expense and returns its generated id." |
 | 8 | Agent | Writes scaffolding and leaves `saveExpense` with `TODO(praxis:Where the data lives)` in the body. **Do not ask Praxis to remove or implement the marked function.** The marker is the boundary between generated scaffolding and the student's implementation. |
 | 9 | Student | Implements `saveExpense` in the editor. |
-| 10 | Agent | Reviews against the prediction; records `Matched: yes` or `no` in `.praxis/review.md`. |
+| 10 | Agent | Reviews the chosen architecture and the prediction. Records `Matched: yes`, `partial`, `no`, or `blocked`, plus Decision alignment, Prediction alignment, and evidence. |
 
 The **topic string inside the marker** must match the decision block's `Topic:` line (`Where the data lives` in the hook demo below).
 
@@ -145,8 +145,8 @@ After confirmation: one prediction sentence, then code with one `TODO(praxis:<to
 6. Model writes the step and leaves the **TODO(praxis:…)** marker in one function.
 7. **preToolUse** denies edits that drop marker substrings until the student implements.
 8. Student implements the function (marker gone).
-9. Model writes `.praxis/review.md` (`Matched: yes` | `no`); **stop** / **session** may refresh `.praxis/report.md` and root **DECISIONS.md**.
-10. Next build request or chat continues from `.praxis/progress.md` and notes.
+9. Model writes `.praxis/review.md` (`Matched: yes`, `partial`, `no`, or `blocked`, with Decision alignment and Prediction alignment); **stop** / **session** may refresh `.praxis/report.md` and root **DECISIONS.md**.
+10. Next build request or chat continues from `.praxis/progress.md` and notes. `Level` sets explanation depth. Adaptation stays on until `Adapt: off`. Cross-project progress stays off until `Progress: on`. That record stays on this computer, and `Progress: clear` deletes it.
 
 ```mermaid
 flowchart LR
@@ -200,7 +200,7 @@ student-project/
 student-project/
 ├── .praxis/
 │   ├── …              # progress, decisions, map, marks
-│   ├── review.md      # Matched: yes|no — **model-written** (driver fakes this in the demo)
+│   ├── review.md      # Matched yes|partial|no|blocked — **model-written** (driver fakes this in the demo)
 │   └── report.md      # **hook-generated** on stop from review.md + decisions
 ├── DECISIONS.md
 └── src/expenses.ts    # marker removed — student implementation

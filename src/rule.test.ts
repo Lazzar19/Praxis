@@ -54,6 +54,14 @@ describe("shipping interview rule", () => {
     assert.match(rule, /Do not finish the function/);
     assert.match(rule, /review the function against the decision/);
     assert.match(rule, /whether the result matched their sentence/);
+    assert.match(rule, /Matched: partial/);
+    assert.match(rule, /Matched: blocked/);
+    assert.match(rule, /Decision alignment/);
+    assert.match(rule, /Prediction alignment/);
+    assert.match(rule, /more definitions, smaller steps/);
+    assert.match(rule, /Adapt: off/);
+    assert.match(rule, /Progress: on/);
+    assert.match(rule, /Do not send this record to an external service/);
     assert.match(rule, /DECISIONS\.md/);
     assert.match(rule, /\.praxis\/progress\.md/);
     assert.match(rule, /Topic: the open beat/);

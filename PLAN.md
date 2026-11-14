@@ -208,6 +208,30 @@ The gate tests cover the edit matrix: pending source denied, notes allowed, one-
 
 Done when that matrix passes.
 
+### Slice 20 — a review can be partial
+
+`Matched` is `yes`, `partial`, `no`, or `blocked`. `yes` means the prediction was achieved. `partial` means part of it was achieved. `no` means the result differs. `blocked` means the review cannot be made. The review lists evidence from the code, and a next question when the result is partial, no, or blocked. A review that only says `Matched: yes` still publishes.
+
+Done when a partial review publishes its evidence and its next question, and a yes-only review still publishes `Matched: yes`.
+
+### Slice 21 — decision alignment is separate from prediction alignment
+
+Decision alignment says whether the code follows the architecture they chose. Prediction alignment says whether the code does what they predicted. Each is `yes`, `partial`, `no`, or `blocked`. The report shows both when the review recorded them.
+
+Done when a report can say the decision alignment is yes while the prediction alignment is partial.
+
+### Slice 22 — the level adapts, and they can turn that off
+
+`Level` is beginner, intermediate, or advanced, and it sets how full the explanation is. From their results, Praxis asks for a comparison when they take the proposal repeatedly, a grounding question when they answer idk repeatedly, a smaller step when predictions miss, and a harder decision when predictions hold. It says that adaptation in one sentence. `Adapt: off` keeps the level they chose and does not change the step size.
+
+Done when two missed predictions ask for a smaller step, and `Adapt: off` does not.
+
+### Slice 23 — progress across projects is opt-in
+
+Nothing is recorded until they write `Progress: on`. The record stays on this computer. A later project is told what they already practiced. It is not sent to an external service. `Progress: clear` deletes it.
+
+Done when one opted-in project is named in the next project's session, an opted-out project hears nothing, and clear removes the record.
+
 ---
 
 ## Later
@@ -232,4 +256,6 @@ Done when that matrix passes.
 - `hooks/state.mjs` — schema, slice 17
 - `docs/demo-session.mjs` — demo command, slice 18
 - `src/matrix.test.ts` — edit matrix, slice 19
+- `hooks/review.mjs` and `rules/praxis.mdc` — partial review and two alignments, slices 20 and 21
+- `hooks/learn.mjs` — level adaptation and cross-project progress, slices 22 and 23
 - `.praxis/` in the student project — notes, not the plugin source
