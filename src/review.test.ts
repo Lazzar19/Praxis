@@ -156,5 +156,78 @@ Matched: yes
 `);
     run("stop", project);
     assert.equal(existsSync(path.join(project, ".praxis", "report.md")), false);
+    const waiting = run("session", project) as { additional_context?: string };
+    assert.doesNotMatch(waiting.additional_context ?? "", /is in progress/);
+  });
+
+  it("keeps two marks that share a topic", () => {
+    const project = tempProject();
+    writeDecision(project);
+    writeFileSync(path.join(project, "src", "store.ts"), `export function saveNote(): string {
+  throw new Error("TODO(praxis:Where the data lives): implement persistence boundary");
+}
+
+export function listNotes(): string[] {
+  throw new Error("TODO(praxis:Where the data lives): implement the query");
+}
+`);
+    run("stop", project);
+    const marks = readFileSync(path.join(project, ".praxis", "marks.md"), "utf8");
+    assert.match(marks, /Function: saveNote/);
+    assert.match(marks, /Function: listNotes/);
+    assert.match(marks, /Description: implement persistence boundary/);
+    assert.match(marks, /Description: implement the query/);
+
+    const denied = run("gate", project, {
+      tool_name: "StrReplace",
+      tool_input: {
+        path: "src/store.ts",
+        old_string: 'throw new Error("TODO(praxis:Where the data lives): implement the query");',
+        new_string: 'return [];',
+      },
+    }) as { permission: string };
+    assert.equal(denied.permission, "deny");
+
+    writeFileSync(path.join(project, "src", "store.ts"), `export function saveNote(): string {
+  return "notes";
+}
+
+export function listNotes(): string[] {
+  throw new Error("TODO(praxis:Where the data lives): implement the query");
+}
+`);
+    writeFileSync(path.join(project, ".praxis", "review.md"), `## Review
+Topic: Where the data lives
+Function: saveNote
+Matched: yes
+## End
+`);
+    run("stop", project);
+    const report = readFileSync(path.join(project, ".praxis", "report.md"), "utf8");
+    assert.match(report, /Function: saveNote in src\/store\.ts/);
+    assert.match(report, /Matched: yes/);
+    assert.doesNotMatch(report, /listNotes/);
+  });
+
+  it("treats a partial body as still in progress", () => {
+    const project = tempProject();
+    writeDecision(project);
+    writeFileSync(path.join(project, "src", "store.ts"), `export function saveNote(): string {
+  const notes = [];
+  // TODO(praxis:Where the data lives): implement persistence boundary
+  return notes;
+}
+`);
+    writeFileSync(path.join(project, ".praxis", "review.md"), `## Review
+Topic: Where the data lives
+Matched: yes
+## End
+`);
+    const started = run("session", project) as { additional_context?: string };
+    assert.match(started.additional_context ?? "", /saveNote in src\/store\.ts is in progress/);
+    assert.match(started.additional_context ?? "", /The marker remains, so the learning boundary is still active/);
+    assert.match(started.additional_context ?? "", /Offer the next small step/);
+    assert.match(started.additional_context ?? "", /Do not write the rest of the function/);
+    assert.equal(existsSync(path.join(project, ".praxis", "report.md")), false);
   });
 });

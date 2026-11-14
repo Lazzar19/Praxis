@@ -43,6 +43,11 @@ describe("shipping interview rule", () => {
     assert.match(rule, /test-only/);
     assert.match(rule, /one sentence about what they expect the code to do/);
     assert.match(rule, /TODO\(praxis:<topic>\)/);
+    assert.match(rule, /more than one mark may share that topic/);
+    assert.match(rule, /the expected piece/);
+    assert.match(rule, /Name the function when more than one mark shares the topic/);
+    assert.match(rule, /Offer the next small step/);
+    assert.match(rule, /Do not finish the function/);
     assert.match(rule, /review the function against the decision/);
     assert.match(rule, /whether the result matched their sentence/);
     assert.match(rule, /DECISIONS\.md/);

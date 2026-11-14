@@ -235,7 +235,7 @@ Manual edits under `.praxis/` change what the **session** hook injects on the ne
 
 **Gate:** `Status: pending` blocks project edits; `.praxis/` allowed; `Bypass: one-step` allows one step; `confirmed` or empty progress does not block ([`gateEdit`](hooks/praxis.mjs)).
 
-**Marker:** substring `TODO(praxis:([^)]+))` — topic may include spaces, not `)`. [`protectMarkedEdit`](hooks/review.mjs) denies edits that remove any marker substring (see [`src/review.test.ts`](src/review.test.ts)). **Do not ask the agent to remove or implement the marked function** — that is the student's step.
+**Marker:** `TODO(praxis:<topic>)`, optionally `TODO(praxis:<topic>): the expected piece`. One mark is the default. A step may leave more than one mark with the same topic, and each is counted, so removing one of them is denied. A function that still has the mark and already has some body is in progress: the mark stays, and the model is told to offer the next small step. [`protectMarkedEdit`](hooks/review.mjs) denies edits that remove a mark (see [`src/review.test.ts`](src/review.test.ts)). **Do not ask the agent to remove or finish the marked function** — that is the student's step.
 
 ### Map behavior
 

@@ -166,6 +166,18 @@ Done when a map of a package file, a Dockerfile, a route, a data file, and a tes
 
 Done when each scope allows the edit it names and denies the edit it does not, and `Bypass: one-step` still allows one step and then closes.
 
+### Slice 13 — more than one mark can share a topic
+
+One marked function stays the default. When one function cannot hold the step, more than one mark may use the same topic. The topic is the shared identity. This slice does not add a separate decision id. A mark may name the expected piece after it: `TODO(praxis:<topic>): the expected piece`. Each mark is counted on its own, so removing one of them is still refused. A review names the function when more than one mark shares the topic.
+
+Done when two marks with the same topic keep their descriptions, and an edit that removes only one of them is denied.
+
+### Slice 14 — a partial body stays with the student
+
+A mark with only the placeholder is still waiting, and it is not reviewed. A mark that remains while the function already has some of the body is in progress. The model is told that the marker remains, so the learning boundary is still active, and to offer the next small step. It does not finish the function, and a verdict is not published while that mark remains.
+
+Done when a function that still has its mark and already has a body produces that progress note, and a placeholder mark does not.
+
 ---
 
 ## Later
@@ -184,4 +196,5 @@ Done when each scope allows the edit it names and denies the edit it does not, a
 - `rules/praxis.mdc` — production concerns, slice 10
 - `hooks/record.mjs` — role hints on the map, slice 11
 - `hooks/praxis.mjs` and `rules/praxis.mdc` — bypass scope, slice 12
+- `hooks/review.mjs` and `rules/praxis.mdc` — shared marks and a partial body, slices 13 and 14
 - `.praxis/` in the student project — notes, not the plugin source
