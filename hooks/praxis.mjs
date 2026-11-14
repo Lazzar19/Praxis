@@ -3,7 +3,9 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { homedir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { sessionProblems } from "./consistency.mjs";
 import { classifyPath, ensureMap, isPluginProject, writeRecord } from "./record.mjs";
+import { syncState } from "./state.mjs";
 import { protectMarkedEdit, recordPractice } from "./review.mjs";
 
 const EDIT_TOOLS = new Set(["Write", "StrReplace", "Delete", "EditNotebook", "Edit", "ApplyPatch"]);
@@ -11,7 +13,7 @@ const EDIT_TOOLS = new Set(["Write", "StrReplace", "Delete", "EditNotebook", "Ed
 const BYPASS_SCOPES = "none|one-step|one-edit|one-file|one-build-step|documentation-only|test-only";
 
 export function parseProgress(text) {
-  const progress = { status: null, topic: "", bypass: "none", praxis: null, file: "" };
+  const progress = { status: null, topic: "", bypass: "none", praxis: null, file: "", decisionId: "" };
   const lines = text.split(/\r?\n/);
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
@@ -29,6 +31,8 @@ export function parseProgress(text) {
         if (field[1].toLowerCase() === "file") progress.file = field[2];
       }
     }
+    const decisionId = /^Decision ID:\s*(.*?)\s*$/.exec(line);
+    if (decisionId) progress.decisionId = decisionId[1];
     const file = /^File:\s*(.*?)\s*$/.exec(line);
     if (file) progress.file = file[1];
     const praxis = /^Praxis:\s*(on|off|choosing)\s*$/i.exec(line);
@@ -308,13 +312,15 @@ function respond(command, input) {
     if (praxisOn(live)) clearDeclined(root);
     else if (isDeclined(root) || live.praxis === "off" || live.status === "off") return { additional_context: OFF };
     if (!notesActive(root, live)) return { additional_context: CHOICE };
-    const context = [sessionContext(live), ensureMap(root), recordPractice(root)].filter((part) => part.length > 0).join("\n\n");
+    const stateWarning = syncState(root, live);
+    const context = [sessionContext(live), ensureMap(root), recordPractice(root), stateWarning, sessionProblems(root, live)].filter((part) => part.length > 0).join("\n\n");
     writeRecord(root);
     return context.length > 0 ? { additional_context: context } : {};
   }
   if (command === "stop") {
     if (!isPluginProject(root) && notesActive(root, progress)) {
       if (progress.bypass !== "none") writeFileSync(progressFile(root), clearBypass(text), "utf8");
+      syncState(root, parseProgress(readProgress(root)));
       writeRecord(root);
       recordPractice(root);
     }
@@ -333,7 +339,9 @@ function respond(command, input) {
       writeFileSync(progressFile(root), rememberFile(text, relativeEdit(root, filePath)), "utf8");
     }
   }
-  return protectMarkedEdit(root, input);
+  const guarded = protectMarkedEdit(root, input);
+  if (existsSync(path.join(root, ".praxis"))) syncState(root, parseProgress(readProgress(root)));
+  return guarded;
 }
 
 async function main() {
