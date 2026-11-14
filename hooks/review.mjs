@@ -50,7 +50,7 @@ function publishReview(root) {
   const waiting = [];
   const marks = readMarks(root);
   for (const mark of marks) {
-    const decision = decisions.find((item) => item.topic === mark.topic);
+    const decision = decisionFor(decisions, mark);
     if (!decision) continue;
     let source = "";
     try {
@@ -69,13 +69,13 @@ function publishReview(root) {
       continue;
     }
     if (decision.prediction.length === 0) {
-      waiting.push(`The decision "${mark.topic}" has no prediction. Ask for one sentence about what they expect the code to do before reviewing ${mark.functionName}.`);
+      waiting.push(`The decision "${decision.topic}" has no prediction. Ask for one sentence about what they expect the code to do before reviewing ${mark.functionName}.`);
       continue;
     }
-    const verdict = verdictFor(verdicts, mark, marks);
+    const verdict = verdictFor(verdicts, mark, marks, decision);
     if (!verdict) {
       const name = mark.functionName.length > 0 ? mark.functionName : "the marked function";
-      waiting.push(`Review ${name} in ${mark.file} against the decision "${mark.topic}". Quote the choice, the reason, and the prediction. Say whether the result matched their sentence. Record it in .praxis/review.md as Matched: yes or Matched: no. Do not rewrite the function.`);
+      waiting.push(`Review ${name} in ${mark.file} against the decision "${decision.topic}". Quote the choice, the reason, and the prediction. Say whether the result matched their sentence. Record it in .praxis/review.md as Matched: yes or Matched: no. Do not rewrite the function.`);
       continue;
     }
     sections.push(renderSection(decision, mark, verdict));
@@ -236,15 +236,25 @@ function readVerdicts(root) {
   return verdicts;
 }
 
-function verdictFor(verdicts, mark, marks) {
-  if (mark.functionName.length > 0) {
-    const specific = verdicts.get(`${mark.topic}\0${mark.functionName}`);
-    if (specific) return specific;
+function decisionFor(decisions, mark) {
+  return decisions.find((item) => item.topic === mark.topic || (item.decisionId.length > 0 && item.decisionId === mark.topic));
+}
+
+function verdictFor(verdicts, mark, marks, decision) {
+  const names = [...new Set([mark.topic, decision.topic, decision.decisionId].filter((item) => item.length > 0))];
+  for (const name of names) {
+    if (mark.functionName.length > 0) {
+      const specific = verdicts.get(`${name}\0${mark.functionName}`);
+      if (specific) return specific;
+    }
   }
-  const general = verdicts.get(`${mark.topic}\0`);
-  if (!general) return undefined;
   const siblings = marks.filter((item) => item.topic === mark.topic);
-  return siblings.length === 1 ? general : undefined;
+  if (siblings.length !== 1) return undefined;
+  for (const name of names) {
+    const general = verdicts.get(`${name}\0`);
+    if (general) return general;
+  }
+  return undefined;
 }
 
 function readNotes(root) {

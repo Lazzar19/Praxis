@@ -230,4 +230,45 @@ Matched: yes
     assert.match(started.additional_context ?? "", /Do not write the rest of the function/);
     assert.equal(existsSync(path.join(project, ".praxis", "report.md")), false);
   });
+
+  it("reviews a mark written with the decision id", () => {
+    const project = tempProject();
+    writeFileSync(path.join(project, ".praxis", "decisions.md"), `Goal: Notes API
+
+## Decision
+Topic: Where the data lives
+Decision ID: storage-001
+Context: Where notes are stored.
+Options: one file | a database
+Choice: one file
+Date: 2026-11-14
+Reason:
+${reason}
+Prediction:
+${prediction}
+## End
+`);
+    writeFileSync(path.join(project, ".praxis", "progress.md"), "Status: confirmed\nTopic: Where the data lives\nDecision ID: storage-001\nBypass: none\n");
+    writeFileSync(path.join(project, "src", "store.ts"), `export function saveNote(): string {
+  throw new Error("TODO(praxis:storage-001)");
+}
+`);
+    run("stop", project);
+    assert.match(readFileSync(path.join(project, ".praxis", "marks.md"), "utf8"), /Topic: storage-001/);
+    assert.match(readFileSync(path.join(project, "DECISIONS.md"), "utf8"), /\*\*Decision ID:\*\* storage-001/);
+    writeFileSync(path.join(project, "src", "store.ts"), `export function saveNote(): string {
+  return "notes";
+}
+`);
+    writeFileSync(path.join(project, ".praxis", "review.md"), `## Review
+Topic: Where the data lives
+Matched: yes
+## End
+`);
+    run("stop", project);
+    const report = readFileSync(path.join(project, ".praxis", "report.md"), "utf8");
+    assert.match(report, /## Where the data lives/);
+    assert.match(report, /Function: saveNote in src\/store\.ts/);
+    assert.match(report, /Matched: yes/);
+  });
 });

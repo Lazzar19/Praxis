@@ -137,6 +137,41 @@ I want separate notes, but not accounts on the first day.
     for (const field of [sentence, problem, reply, proposal]) assert.ok(stack.includes(field), field);
   });
 
+  it("exports a decision id and omits one written as none", () => {
+    const source = `Goal: Notes API
+
+## Decision
+Topic: Where the data lives
+Decision ID: storage-001
+Context: Where notes are stored.
+Options: one file | a database
+Choice: one file
+Date: 2026-11-14
+Reason:
+One file is enough.
+Prediction:
+It writes the note.
+## End
+
+## Decision
+Topic: Their level
+Decision ID: none
+Context: How much to explain.
+Options: first time | has shipped
+Choice: first time
+Date: 2026-11-14
+Reason:
+I have shipped one class project.
+## End
+`;
+    const rendered = renderDecisions(source, templates);
+    assert.match(rendered, /\*\*Decision ID:\*\* storage-001/);
+    const level = rendered.split("## 2.")[1] ?? "";
+    assert.doesNotMatch(level, /Decision ID/);
+    assert.equal(parseDecisions(source).decisions[0]?.decisionId, "storage-001");
+    assert.equal(parseDecisions(source).decisions[1]?.decisionId, "");
+  });
+
   it("writes a map of existing code before asking a new question", () => {
     const project = tempProject();
     mkdirSync(path.join(project, "src"));

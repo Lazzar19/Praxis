@@ -26,7 +26,7 @@ export function parseDecisions(text) {
 
 export function renderDecisions(notes, templates) {
   const parsed = parseDecisions(notes);
-  const entries = parsed.decisions.map((decision, index) => withPrediction(withDebate(fill(templates.entry, {
+  const entries = parsed.decisions.map((decision, index) => withPrediction(withIdentity(withDebate(fill(templates.entry, {
     number: String(index + 1),
     title: decision.topic,
     prompt: decision.context,
@@ -34,11 +34,24 @@ export function renderDecisions(notes, templates) {
     choice: decision.choice,
     reason: decision.reason,
     date: decision.date,
-  }), decision), decision.prediction));
+  }), decision), decision), decision.prediction));
   return fill(templates.page, {
     goal: parsed.goal,
     entries: entries.join("\n\n"),
   });
+}
+
+export function previewRecord(root) {
+  if (isPluginProject(root)) return "";
+  let notes = "";
+  try {
+    notes = readFileSync(path.join(root, ".praxis", "decisions.md"), "utf8");
+  } catch {
+    return "";
+  }
+  if (parseDecisions(notes).decisions.length === 0) return "";
+  const rendered = renderDecisions(notes, loadTemplates());
+  return rendered.endsWith("\n") ? rendered : `${rendered}\n`;
 }
 
 export function classifyPath(file) {
@@ -143,27 +156,20 @@ export function ensureMap(root) {
 }
 
 export function writeRecord(root) {
-  if (isPluginProject(root)) return false;
-  const notesPath = path.join(root, ".praxis", "decisions.md");
-  let notes;
-  try {
-    notes = readFileSync(notesPath, "utf8");
-  } catch {
-    return false;
-  }
-  if (parseDecisions(notes).decisions.length === 0) return false;
-  const rendered = renderDecisions(notes, loadTemplates());
-  writeFileSync(path.join(root, "DECISIONS.md"), rendered.endsWith("\n") ? rendered : `${rendered}\n`);
+  const rendered = previewRecord(root);
+  if (rendered.length === 0) return false;
+  writeFileSync(path.join(root, "DECISIONS.md"), rendered);
   return true;
 }
 
-const FIELD_LABELS = ["Topic", "Context", "Their sentence", "Problem", "Reply", "Proposal", "Options", "Choice", "Date", "Reason", "Prediction"];
+const FIELD_LABELS = ["Topic", "Decision ID", "Context", "Their sentence", "Problem", "Reply", "Proposal", "Options", "Choice", "Date", "Reason", "Prediction"];
 
 function parseBlock(block) {
   const body = block.split(/^## End[ \t]*$/m)[0] ?? "";
   if (!/^Reason:[ \t]*/m.test(body)) return null;
   return {
     topic: fieldValue(body, "Topic"),
+    decisionId: debateValue(fieldValue(body, "Decision ID")),
     context: fieldValue(body, "Context"),
     sentence: debateValue(fieldValue(body, "Their sentence")),
     problem: debateValue(fieldValue(body, "Problem")),
@@ -212,6 +218,11 @@ function withDebate(entry, decision) {
   }
   if (lines.length === 0) return entry;
   return `${entry.replace(/\s*$/, "")}\n${lines.join("\n")}`;
+}
+
+function withIdentity(entry, decision) {
+  if (decision.decisionId.length === 0) return entry;
+  return `${entry.replace(/\s*$/, "")}\n- **Decision ID:** ${decision.decisionId}`;
 }
 
 function withPrediction(entry, prediction) {

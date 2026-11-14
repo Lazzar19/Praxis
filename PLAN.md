@@ -178,6 +178,36 @@ A mark with only the placeholder is still waiting, and it is not reviewed. A mar
 
 Done when a function that still has its mark and already has a body produces that progress note, and a placeholder mark does not.
 
+### Slice 15 — a decision has a stable id
+
+Each confirmed decision gets a short Decision ID. The mark uses that id. Topic stays the title the student sees. A mark that still uses the topic resolves to that decision. The export shows the id, and a decision without one omits it.
+
+Done when a mark `TODO(praxis:storage-001)` reviews against the decision titled Where the data lives, and the export contains that id.
+
+### Slice 16 — a session names broken notes
+
+A session reports an inconsistent session, then says to repair it before a new debate. It reports confirmed progress with no decision, a damaged decision block, a marker or marks entry with no decision, a missing file listed in marks, a decision that should have a marker and does not, and a stale `DECISIONS.md`. A consistent session stays quiet. The stale export is regenerated.
+
+Done when each of those breaks is named, and a pending session with a matching decision is not.
+
+### Slice 17 — hook state has a schema
+
+`.praxis/state.json` stores schema version 1, the status, the topic, the decision id, and the bypass. `progress.md` stays the note the model edits. The hook refreshes `state.json` from that note. An older schema is copied to `state.json.bak` and migrated. A newer schema is left in place, and the session says this version cannot read it.
+
+Done when a session writes schema 1, a schema 0 file is backed up, and a schema 2 file is not overwritten.
+
+### Slice 18 — the demo is a command
+
+`npm run demo` runs the expense-tracker session. `npm run demo -- --keep` leaves the temporary project. The script exits non-zero when a check fails, and it writes the transcript to `docs/demo-run.txt`.
+
+Done when `--keep` prints the project path and leaves that directory in place.
+
+### Slice 19 — the hook edit matrix
+
+The gate tests cover the edit matrix: pending source denied, notes allowed, one-step allowed, confirmed allowed, removing a marker denied, an edit that keeps a marker allowed, and an unmarked file allowed. They also cover a Windows-shaped path, an absolute path, letter case, a missing tool input, a missing file, a new file, deleting a marked file, a marker in a comment, a marker in a string, and a token with an apostrophe.
+
+Done when that matrix passes.
+
 ---
 
 ## Later
@@ -197,4 +227,9 @@ Done when a function that still has its mark and already has a body produces tha
 - `hooks/record.mjs` — role hints on the map, slice 11
 - `hooks/praxis.mjs` and `rules/praxis.mdc` — bypass scope, slice 12
 - `hooks/review.mjs` and `rules/praxis.mdc` — shared marks and a partial body, slices 13 and 14
+- `hooks/record.mjs`, `hooks/review.mjs`, and `rules/praxis.mdc` — decision id, slice 15
+- `hooks/consistency.mjs` — session check, slice 16
+- `hooks/state.mjs` — schema, slice 17
+- `docs/demo-session.mjs` — demo command, slice 18
+- `src/matrix.test.ts` — edit matrix, slice 19
 - `.praxis/` in the student project — notes, not the plugin source
