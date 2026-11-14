@@ -38,12 +38,11 @@ The **topic string inside the marker** must match the decision block's `Topic:` 
 Reproduce from the plugin root:
 
 ```bash
-node docs/demo-session.mjs
+npm run demo
+npm run demo -- --keep
 ```
 
-The script creates a throwaway project under `/tmp`, drives `session`, `gate`, and `stop` with the same stdin JSON shapes as the tests, checks results, and cleans up. In a real session, **`Matched: yes` / `no` in `.praxis/review.md` is written by the model** ([`rules/praxis.mdc`](rules/praxis.mdc)); hooks only **read** `review.md` and may generate `.praxis/report.md` on `stop` / `session`. The demo driver **simulates** the model by writing `review.md` before the final `stop` — that step is not a hook.
-
-Full stdout from one run is in [`docs/demo-run.txt`](docs/demo-run.txt) (paths under `/tmp/…` vary per run).
+The script creates a throwaway project under `/tmp`, drives `session`, `gate`, and `stop` with the same stdin JSON shapes as the tests, checks results, and cleans up. `--keep` leaves that directory. The full transcript is written to [`docs/demo-run.txt`](docs/demo-run.txt). Paths under `/tmp/…` vary per run. In a real session, **`Matched: yes` / `no` in `.praxis/review.md` is written by the model** ([`rules/praxis.mdc`](rules/praxis.mdc)); hooks only **read** `review.md` and may generate `.praxis/report.md` on `stop` / `session`. The demo driver **simulates** the model by writing `review.md` before the final `stop` — that step is not a hook.
 
 Trimmed excerpts (from a real run; `…` omits the rest of the on/off guidance):
 

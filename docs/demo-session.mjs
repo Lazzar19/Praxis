@@ -24,6 +24,7 @@ const MARKER = `TODO(praxis:${TOPIC})`;
 
 function fail(message) {
   console.error(`demo-session: ${message}`);
+  saveTranscript();
   process.exit(1);
 }
 
@@ -63,7 +64,19 @@ function assertEqual(actual, expected, label) {
   if (a !== e) fail(`${label}: expected ${e}, got ${a}`);
 }
 
+const keep = process.argv.includes("--keep");
 const project = mkdtempSync(path.join(tmpdir(), "praxis-demo-expense-"));
+const transcript = [];
+const writeStdout = process.stdout.write.bind(process.stdout);
+process.stdout.write = (chunk, encoding, callback) => {
+  transcript.push(String(chunk));
+  return writeStdout(chunk, encoding, callback);
+};
+
+function saveTranscript() {
+  writeFileSync(path.join(REPO_ROOT, "docs", "demo-run.txt"), transcript.join(""));
+}
+
 const cleanup = () => {
   try {
     rmSync(project, { recursive: true, force: true });
@@ -72,7 +85,7 @@ const cleanup = () => {
   }
 };
 
-process.on("exit", cleanup);
+if (!keep) process.on("exit", cleanup);
 process.on("SIGINT", () => {
   cleanup();
   process.exit(130);
@@ -226,15 +239,22 @@ Matched: yes
     ".praxis/report.md",
     "DECISIONS.md",
     "src/expenses.ts",
+    ".praxis/state.json",
   ]) {
     const abs = path.join(project, f);
     console.log(`${existsSync(abs) ? "✓" : "✗"} ${rel(abs)}`);
     if (!existsSync(abs)) fail(`missing ${f}`);
   }
 
+  const state = JSON.parse(readFileSync(path.join(project, ".praxis", "state.json"), "utf8"));
+  if (state.schemaVersion !== 1) fail(`state.json schema ${state.schemaVersion}`);
+  if (keep) console.log(`\nKept student project: ${project}`);
+
   section("Done");
   console.log("All hook steps matched expectations.");
+  saveTranscript();
 } catch (error) {
-  cleanup();
+  saveTranscript();
+  if (!keep) cleanup();
   throw error;
 }

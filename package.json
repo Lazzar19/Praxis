@@ -13,7 +13,8 @@
   "scripts": {
     "build": "tsc && tsc -p tsconfig.extension.json && esbuild src/extension/extension.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/extension.cjs --external:vscode --sourcemap",
     "start": "node dist/index.js",
-    "test": "tsx --test src/*.test.ts src/extension/*.test.ts"
+    "test": "tsx --test src/*.test.ts src/extension/*.test.ts",
+    "demo": "node docs/demo-session.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.4.0",
