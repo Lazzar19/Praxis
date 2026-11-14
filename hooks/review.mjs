@@ -75,7 +75,7 @@ function publishReview(root) {
     const verdict = verdictFor(verdicts, mark, marks, decision);
     if (!verdict) {
       const name = mark.functionName.length > 0 ? mark.functionName : "the marked function";
-      waiting.push(`Review ${name} in ${mark.file} against the decision "${decision.topic}". Quote the choice, the reason, and the prediction. Say whether the result matched their sentence. Record it in .praxis/review.md as Matched: yes or Matched: no. Do not rewrite the function.`);
+      waiting.push(`Review ${name} in ${mark.file} against the decision "${decision.topic}". Quote the choice, the reason, and the prediction. Say whether the result matched their sentence. Record it in .praxis/review.md as Matched: yes, partial, no, or blocked. Record Decision alignment and Prediction alignment. List the evidence from the code. When Matched is partial, no, or blocked, add one Next question. Do not rewrite the function.`);
       continue;
     }
     sections.push(renderSection(decision, mark, verdict));
@@ -92,12 +92,19 @@ function publishReview(root) {
 
 function renderSection(decision, mark, verdict) {
   const name = mark.functionName.length > 0 ? mark.functionName : "the marked function";
-  return `## ${decision.topic}
-Choice: ${decision.choice}
-Reason: ${decision.reason}
-Prediction: ${decision.prediction}
-Function: ${name} in ${mark.file}
-Matched: ${verdict}`;
+  const lines = [
+    `## ${decision.topic}`,
+    `Choice: ${decision.choice}`,
+    `Reason: ${decision.reason}`,
+    `Prediction: ${decision.prediction}`,
+    `Function: ${name} in ${mark.file}`,
+  ];
+  if (verdict.decision.length > 0) lines.push(`Decision alignment: ${verdict.decision}`);
+  if (verdict.prediction.length > 0) lines.push(`Prediction alignment: ${verdict.prediction}`);
+  lines.push(`Matched: ${verdict.matched}`);
+  if (verdict.evidence.length > 0) lines.push(`Evidence:\n${verdict.evidence.map((item) => `- ${item}`).join("\n")}`);
+  if (verdict.next.length > 0) lines.push(`Next question:\n${verdict.next.map((item) => `- ${item}`).join("\n")}`);
+  return lines.join("\n");
 }
 
 function scanMarks(root) {
@@ -230,10 +237,43 @@ function readVerdicts(root) {
     const body = block.split(/^## End[ \t]*$/m)[0] ?? "";
     const topic = /^Topic:[ \t]*(.*)$/m.exec(body)?.[1] ?? "";
     const functionName = /^Function:[ \t]*(.*)$/m.exec(body)?.[1] ?? "";
-    const matched = /^Matched:[ \t]*(yes|no)[ \t]*$/im.exec(body)?.[1];
-    if (topic.length > 0 && matched) verdicts.set(functionName.length > 0 ? `${topic}\0${functionName}` : `${topic}\0`, matched.toLowerCase());
+    const verdict = readVerdictBlock(body);
+    if (topic.length > 0 && verdict) verdicts.set(functionName.length > 0 ? `${topic}\0${functionName}` : `${topic}\0`, verdict);
   }
   return verdicts;
+}
+
+const VERDICT = "yes|partial|no|blocked";
+
+function readVerdictBlock(body) {
+  const matched = new RegExp(`^Matched:[ \\t]*(${VERDICT})[ \\t]*$`, "im").exec(body)?.[1]?.toLowerCase() ?? "";
+  const decision = new RegExp(`^Decision alignment:[ \\t]*(${VERDICT})[ \\t]*$`, "im").exec(body)?.[1]?.toLowerCase() ?? "";
+  const prediction = new RegExp(`^Prediction alignment:[ \\t]*(${VERDICT})[ \\t]*$`, "im").exec(body)?.[1]?.toLowerCase() ?? "";
+  const overall = matched || prediction;
+  if (overall.length === 0 && decision.length === 0) return null;
+  return {
+    matched: overall || decision,
+    decision,
+    prediction,
+    evidence: listUnder(body, "Evidence"),
+    next: listUnder(body, "Next question"),
+  };
+}
+
+function listUnder(body, name) {
+  const match = new RegExp(`^${name}:[ \\t]*$`, "m").exec(body);
+  if (!match) return [];
+  const lines = [];
+  for (const line of body.slice(match.index + match[0].length).split(/\r?\n/)) {
+    if (line.trim().length === 0) continue;
+    const item = /^- (.*)$/.exec(line);
+    if (item) {
+      lines.push(item[1]);
+      continue;
+    }
+    break;
+  }
+  return lines;
 }
 
 function decisionFor(decisions, mark) {

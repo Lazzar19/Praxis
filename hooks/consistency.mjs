@@ -79,7 +79,7 @@ function readMarks(root) {
 function hasVerdict(review, decision) {
   return review.split(/^## Review[ \t]*$/m).slice(1).some((block) => {
     const topic = /^Topic:[ \t]*(.*)$/m.exec(block)?.[1] ?? "";
-    const matched = /^Matched:[ \t]*(yes|no)[ \t]*$/im.test(block);
+    const matched = /^Matched:[ \t]*(yes|partial|no|blocked)[ \t]*$/im.test(block);
     return matched && (topic === decision.topic || topic === decision.decisionId);
   });
 }
