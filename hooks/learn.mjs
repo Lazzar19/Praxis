@@ -37,6 +37,17 @@ export function progressNote(root, progress) {
   return `Local progress is on, and it stays on this computer. ${record} Do not send this record to an external service. They delete it by writing Progress: clear.`;
 }
 
+export function practiceTotals() {
+  const matched = { yes: 0, partial: 0, no: 0, blocked: 0 };
+  let projects = 0;
+  for (const project of Object.values(readLearning().projects)) {
+    projects += 1;
+    const counts = project.matched && typeof project.matched === "object" ? project.matched : {};
+    for (const key of Object.keys(matched)) matched[key] += Number(counts[key] ?? 0);
+  }
+  return { projects, matched };
+}
+
 export function rememberProgress(root, progress) {
   if (progress.track === "clear") {
     rmSync(learningFile(), { force: true });
