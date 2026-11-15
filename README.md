@@ -82,6 +82,10 @@ You need a **student project folder** (any workspace that is not this plugin rep
 
 ### Install the plugin (copy, not symlink)
 
+**Praxis can block project edits while a learning decision is open.**
+
+From this repository, `npm run plugin:install` copies the plugin into place and keeps the previous copy for `npm run plugin:rollback`. `npm run plugin:update`, `plugin:status`, `plugin:uninstall`, and `plugin:package` are the other commands. Details are in [docs/distribution.md](docs/distribution.md).
+
 Cursor loads local plugins from `~/.cursor/plugins/local/<name>/`. The tree must include [`.cursor-plugin/plugin.json`](.cursor-plugin/plugin.json), [`hooks/hooks.json`](hooks/hooks.json) with scripts under `hooks/`, and [`rules/praxis.mdc`](rules/praxis.mdc).
 
 Copy the entire [Lazzar19/Praxis](https://github.com/Lazzar19/Praxis) clone (folder name is usually `Praxis`). Do not symlink a checkout that resolves outside `local/`: [Cursor docs](https://cursor.com/docs/plugins#test-plugins-locally).
@@ -253,8 +257,10 @@ Node **20+** required for `npm ci` / `npm test` and for hook scripts at runtime 
 
 ```bash
 npm ci
-npm test
-npm run build   # retired MCP + extension artifacts
+npm test              # shipping path, then the legacy path
+npm run test:active   # rule and hooks
+npm run test:legacy   # retired MCP, card, and YAML session
+npm run build         # retired MCP + extension artifacts
 ```
 
 No `.github` CI — run tests locally. [`package.json`](package.json): `engines.node >=20`, `vscode ^1.95.0` (extension only). Student apps need no Node.
@@ -263,7 +269,7 @@ Follow [PLAN.md](PLAN.md). Workspace rule [`.cursor/rules/no-code-before-export.
 
 ## Retired compatibility path
 
-These remain for **tests and compatibility only** and may be removed in a later cleanup. Students on the shipping path use the rule and hooks only.
+These remain for **tests and compatibility only** and may be removed in a later cleanup. Students on the shipping path use the rule and hooks only. `npm run test:legacy` runs this path. `npm run test:active` runs the shipping path.
 
 | Active | Retired |
 |---|---|

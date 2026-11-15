@@ -83,4 +83,8 @@ When a session says Praxis found an inconsistent session, repair those notes bef
 
 Cross-project progress is off until they write Progress: on. Then a later project may hear what they already practiced. The record stays on this computer. Do not send this record to an external service. They delete it by writing Progress: clear.
 
+When they ask to run tests for the marked function, write Tests: run. The hook runs at most three matching test files with node --test, for at most 15 seconds, then sets Tests: done. The marked function was not changed. Record the counts under Tests in the review. Do not run tests they did not ask for.
+
+On stop, `.praxis/export/` is written. review.json keeps the alignments and the evidence. portfolio.md keeps their words. summary.json omits reasons, predictions, and file paths.
+
 Details you add beyond their decision are the proposal. Label them as yours. Do not record them as their choice.

@@ -232,6 +232,36 @@ Nothing is recorded until they write `Progress: on`. The record stays on this co
 
 Done when one opted-in project is named in the next project's session, an opted-out project hears nothing, and clear removes the record.
 
+### Slice 24 — a review can cite tests
+
+Tests run only when they ask, by writing `Tests: run`. The hook runs at most three test files that name the marked function, with `node --test`, for at most 15 seconds. It records how many passed and how many failed. It does not change the marked function. The line then becomes `Tests: done`, so the next session does not run them again.
+
+Done when a passing test and a failing test are counted, the source file is unchanged, and a second session does not run them again.
+
+### Slice 25 — notes export beyond Markdown
+
+On stop, and on a session that already has decisions, `.praxis/export/` gains `session.json`, `review.json`, `stats.json`, `stats.csv`, `portfolio.md`, and `summary.json`. The portfolio keeps their words. The summary omits reasons, predictions, and file paths. When cross-project progress is on, the stats include those other projects' counts.
+
+Done when a review exports its id, alignments, and evidence, and the summary does not contain the reason.
+
+### Slice 26 — shipping tests are separate from the legacy path
+
+`npm run test:active` runs the rule and the hooks. `npm run test:legacy` runs the old MCP server, the question card, and the YAML session. `npm test` runs both. The README names which path ships.
+
+Done when both commands are present and the README points the legacy files at `test:legacy`.
+
+### Slice 27 — distribution is documented before a marketplace
+
+Version 0.1.0 stays experimental and off the marketplace. `CHANGELOG.md` records it. `docs/distribution.md` records the Node and Cursor requirements, what the hook can block, what it reads and writes, and that it does not upload notes. `npm run plugin:package` writes a copy without `node_modules`, `.git`, or `dist`.
+
+Done when the document contains the block warning and the package command writes a manifest.
+
+### Slice 28 — install, update, roll back, and uninstall
+
+`npm run plugin:install` and `plugin:update` print that Praxis can block project edits while a learning decision is open, then copy this repository to the local plugin folder and keep the previous copy. `plugin:status` says whether that copy matches this version. `plugin:rollback` restores the previous copy. `plugin:uninstall` removes the installed copy and leaves the backup.
+
+Done when a temporary install reports the current version, a rollback restores the previous copy, and uninstall removes only the install.
+
 ---
 
 ## Later
@@ -258,4 +288,9 @@ Done when one opted-in project is named in the next project's session, an opted-
 - `src/matrix.test.ts` — edit matrix, slice 19
 - `hooks/review.mjs` and `rules/praxis.mdc` — partial review and two alignments, slices 20 and 21
 - `hooks/learn.mjs` — level adaptation and cross-project progress, slices 22 and 23
+- `hooks/tests.mjs` — bounded test evidence, slice 24
+- `hooks/export.mjs` — export formats, slice 25
+- `package.json` — active and legacy test scripts, slice 26
+- `docs/distribution.md` and `CHANGELOG.md` — distribution notes, slice 27
+- `scripts/plugin.mjs` — install and rollback, slice 28
 - `.praxis/` in the student project — notes, not the plugin source

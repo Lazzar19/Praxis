@@ -62,6 +62,10 @@ describe("shipping interview rule", () => {
     assert.match(rule, /Adapt: off/);
     assert.match(rule, /Progress: on/);
     assert.match(rule, /Do not send this record to an external service/);
+    assert.match(rule, /Tests: run/);
+    assert.match(rule, /node --test/);
+    assert.match(rule, /The marked function was not changed/);
+    assert.match(rule, /summary\.json omits reasons, predictions, and file paths/);
     assert.match(rule, /DECISIONS\.md/);
     assert.match(rule, /\.praxis\/progress\.md/);
     assert.match(rule, /Topic: the open beat/);
