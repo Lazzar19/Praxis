@@ -28,11 +28,11 @@ Choosing on starts the debate. Choosing off keeps no notes.
 | Status | Experimental, version 0.1.0, pre-release |
 | Marketplace | Not available |
 
-**What works.** A project turns Praxis on or off. A build request gets their architecture sentence, one problem, and one proposal, then an AskQuestion to keep theirs, take the proposal, or mix the two. While that decision is open, project edits are refused. One marked function is left for the student. The review records `Matched`, decision alignment, prediction alignment, and evidence. An existing repository gets a map. `Tests: run` cites a bounded test run. Stop writes `.praxis/export/`. Install, update, status, rollback, and uninstall are local commands.
+**What works.** A project turns Praxis on or off. A build request gets their architecture sentence, one problem, and one proposal, then an AskQuestion to keep theirs, take the proposal, or mix the two. While that decision is open, project edits are refused. One marked function is left for the student. The review records `Matched`, decision alignment, prediction alignment, and evidence. An existing repository gets a map. `Tests: run` cites a bounded test run. Stop writes `.praxis/export/`. The decision timeline is `.praxis/timeline.md`, opened beside the chat. Install, update, status, rollback, and uninstall are local commands.
 
 **What is retired.** The MCP server, the question card, the YAML quiz, and `scaffold_todos` stay in the repository for tests. Students do not use them. See [Retired compatibility path](#retired-compatibility-path).
 
-**What is planned.** [PLAN.md](PLAN.md) lists the rest under Later: publishing to the Cursor marketplace, fading hints across projects, a decision timeline in a panel, and a recall question after the review.
+**What is planned.** [PLAN.md](PLAN.md) lists the rest under Later: publishing to the Cursor marketplace, fading hints across projects, and a recall question after the review.
 
 ## Demo
 
@@ -214,6 +214,7 @@ student-project/
 ├── .praxis/
 │   ├── progress.md    # often Status: confirmed
 │   ├── decisions.md   # operational source of truth (append blocks)
+│   ├── timeline.md    # confirmed decisions, in the order they were written
 │   ├── map.md
 │   ├── marks.md       # Topic / File / Function from TODO scan
 │   ├── state.json

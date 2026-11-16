@@ -55,12 +55,13 @@ describe("README documentation", () => {
     const status = section("## Status and roadmap");
     assert.match(status, /Experimental, version 0\.1\.0, pre-release/);
     assert.match(status, /Marketplace \| Not available/);
-    assert.match(status, /What works/);
+    assert.match(status, /What works[\s\S]*decision timeline is `\.praxis\/timeline\.md`/);
     assert.match(status, /What is retired/);
     assert.match(status, /MCP server/);
-    assert.match(status, /publishing to the Cursor marketplace/);
-    assert.match(status, /fading hints/);
-    assert.match(status, /decision timeline/);
-    assert.match(status, /recall question/);
+    const planned = status.split("What is planned")[1] ?? "";
+    assert.match(planned, /publishing to the Cursor marketplace/);
+    assert.match(planned, /fading hints/);
+    assert.match(planned, /recall question/);
+    assert.doesNotMatch(planned, /decision timeline/);
   });
 });

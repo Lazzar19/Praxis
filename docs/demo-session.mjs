@@ -244,6 +244,7 @@ Matched: yes
     ".praxis/export/stats.csv",
     ".praxis/export/portfolio.md",
     ".praxis/export/summary.json",
+    ".praxis/timeline.md",
     "DECISIONS.md",
     "src/expenses.ts",
   ]) {
@@ -258,6 +259,9 @@ Matched: yes
   if (!portfolio.includes(reason)) fail("portfolio.md missing their reason");
   const summary = readFileSync(path.join(project, ".praxis", "export", "summary.json"), "utf8");
   if (summary.includes(reason)) fail("summary.json kept their reason");
+  const timeline = readFileSync(path.join(project, ".praxis", "timeline.md"), "utf8");
+  if (!timeline.includes(TOPIC)) fail("timeline.md missing the topic");
+  if (!timeline.includes("take the proposal")) fail("timeline.md missing the choice");
   if (keep) console.log(`\nKept student project: ${project}`);
 
   section("Done");

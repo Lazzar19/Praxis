@@ -87,4 +87,6 @@ When they ask to run tests for the marked function, write Tests: run. The hook r
 
 On stop, `.praxis/export/` is written. review.json keeps the alignments and the evidence. portfolio.md keeps their words. summary.json omits reasons, predictions, and file paths.
 
+On stop, `.praxis/timeline.md` lists confirmed decisions in the order they were written, with the choice, the reason, and the review when one exists. When they ask to see the timeline, open that file beside the chat. Do not paste the timeline into the chat.
+
 Details you add beyond their decision are the proposal. Label them as yours. Do not record them as their choice.

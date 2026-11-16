@@ -25,7 +25,7 @@ Praxis can block project edits while a learning decision is open.
 
 ## What Praxis reads and writes
 
-The hook reads project source to build the map and to find marks, and it reads `.praxis/` notes. It writes `.praxis/` (progress, decisions, map, marks, review report, state, tests, and `export/`) and regenerates `DECISIONS.md` at the project root.
+The hook reads project source to build the map and to find marks, and it reads `.praxis/` notes. It writes `.praxis/` (progress, decisions, timeline, map, marks, review report, state, tests, and `export/`) and regenerates `DECISIONS.md` at the project root.
 
 It does not upload source or notes. The Cursor chat itself is sent by Cursor to the model provider; that is outside this plugin.
 

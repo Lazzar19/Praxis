@@ -280,13 +280,18 @@ The README states experimental 0.1.0, what works, what is retired, and what is p
 
 Done when that status section names each of those four planned items.
 
+### Slice 32 — the decision timeline opens beside the chat
+
+Cursor plugins have no view of their own. On stop, and on a session that already has decisions, the hook writes `.praxis/timeline.md`. Entries stay in the order they were written. Each one shows the date, the choice, the reason, and the review when a review exists. A pending topic that is not confirmed yet is listed as open. The command `decision-timeline` and the rule tell the model to open that file beside the chat, and not to paste it into the chat.
+
+Done when two decisions stay in note order, the review stays on the decision it belongs to, and a session with no decisions does not write the file.
+
 ---
 
 ## Later
 
 - Publishing to the Cursor marketplace.
 - Fading hints across projects.
-- A decision timeline in a panel.
 - A recall question after the review, brought back in a later chat if the answer does not hold.
 
 ## Files this refactor starts from
@@ -313,4 +318,5 @@ Done when that status section names each of those four planned items.
 - `scripts/plugin.mjs` — install and rollback, slice 28
 - `README.md` — quick start, demo files, and roadmap, slices 29–31
 - `docs/demo-session.mjs` — export files in the captured run, slice 30
+- `hooks/timeline.mjs` and `commands/decision-timeline.md` — timeline beside the chat, slice 32
 - `.praxis/` in the student project — notes, not the plugin source

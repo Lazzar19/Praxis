@@ -5,6 +5,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { sessionProblems } from "./consistency.mjs";
 import { writeExports } from "./export.mjs";
+import { writeTimeline } from "./timeline.mjs";
 import { learningNote, progressNote, rememberProgress } from "./learn.mjs";
 import { runMarkedTests } from "./tests.mjs";
 import { classifyPath, ensureMap, isPluginProject, writeRecord } from "./record.mjs";
@@ -329,7 +330,8 @@ function respond(command, input) {
     const settled = parseProgress(readProgress(root));
     if (testNote.length > 0) syncState(root, settled);
     writeExports(root, settled);
-    const context = [sessionContext(live), ensureMap(root), practice, testNote, stateWarning, sessionProblems(root, live), learningNote(root, settled), progressNote(root, settled)].filter((part) => part.length > 0).join("\n\n");
+    const timelineNote = writeTimeline(root, settled);
+    const context = [sessionContext(live), ensureMap(root), practice, testNote, timelineNote, stateWarning, sessionProblems(root, live), learningNote(root, settled), progressNote(root, settled)].filter((part) => part.length > 0).join("\n\n");
     writeRecord(root);
     return context.length > 0 ? { additional_context: context } : {};
   }
@@ -343,6 +345,7 @@ function respond(command, input) {
       syncState(root, tested);
       writeRecord(root);
       writeExports(root, tested);
+      writeTimeline(root, tested);
       rememberProgress(root, tested);
     }
     return {};
