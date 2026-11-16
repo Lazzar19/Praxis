@@ -237,9 +237,15 @@ Matched: yes
     ".praxis/marks.md",
     ".praxis/review.md",
     ".praxis/report.md",
+    ".praxis/state.json",
+    ".praxis/export/session.json",
+    ".praxis/export/review.json",
+    ".praxis/export/stats.json",
+    ".praxis/export/stats.csv",
+    ".praxis/export/portfolio.md",
+    ".praxis/export/summary.json",
     "DECISIONS.md",
     "src/expenses.ts",
-    ".praxis/state.json",
   ]) {
     const abs = path.join(project, f);
     console.log(`${existsSync(abs) ? "✓" : "✗"} ${rel(abs)}`);
@@ -248,6 +254,10 @@ Matched: yes
 
   const state = JSON.parse(readFileSync(path.join(project, ".praxis", "state.json"), "utf8"));
   if (state.schemaVersion !== 1) fail(`state.json schema ${state.schemaVersion}`);
+  const portfolio = readFileSync(path.join(project, ".praxis", "export", "portfolio.md"), "utf8");
+  if (!portfolio.includes(reason)) fail("portfolio.md missing their reason");
+  const summary = readFileSync(path.join(project, ".praxis", "export", "summary.json"), "utf8");
+  if (summary.includes(reason)) fail("summary.json kept their reason");
   if (keep) console.log(`\nKept student project: ${project}`);
 
   section("Done");

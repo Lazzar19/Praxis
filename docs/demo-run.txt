@@ -1,4 +1,4 @@
-Student project: /tmp/praxis-demo-expense-QsFbku
+Student project: /tmp/praxis-demo-expense-2URAEU
 Hook binary: /home/lazzar20/Projects/Praxis/hooks/praxis.mjs
 
 === 1 session (new chat → on or off, no notes yet) ===
@@ -108,11 +108,15 @@ Matched: yes
 ✓ .praxis/marks.md
 ✓ .praxis/review.md
 ✓ .praxis/report.md
+✓ .praxis/state.json
+✓ .praxis/export/session.json
+✓ .praxis/export/review.json
+✓ .praxis/export/stats.json
+✓ .praxis/export/stats.csv
+✓ .praxis/export/portfolio.md
+✓ .praxis/export/summary.json
 ✓ DECISIONS.md
 ✓ src/expenses.ts
-✓ .praxis/state.json
-
-Kept student project: /tmp/praxis-demo-expense-QsFbku
 
 === Done ===
 

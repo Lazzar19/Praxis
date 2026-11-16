@@ -8,6 +8,32 @@ The student states the architecture in their own words. Praxis names one problem
 
 Display name: **Praxis**. Package name: `learn-coach`. There is no setup command inside a student project.
 
+## Quick start
+
+The first successful result is the on-or-off question. These steps are enough. The source tree and the retired MCP path are for people changing this repository.
+
+1. **Install.** From this repository, run `npm run plugin:install`. The manual copy is under [Try Praxis as a student](#try-praxis-as-a-student).
+2. **Reload.** **Developer: Reload Window**.
+3. **Enable.** **Customize** → enable **Praxis**.
+4. **Open a new Agent chat** in a student project. This repository is not that project.
+5. **Ask to build something.**
+6. **See the first AskQuestion.** It offers two options: turn Praxis on for this project, or leave it off.
+
+Choosing on starts the debate. Choosing off keeps no notes.
+
+## Status and roadmap
+
+| | |
+|---|---|
+| Status | Experimental, version 0.1.0, pre-release |
+| Marketplace | Not available |
+
+**What works.** A project turns Praxis on or off. A build request gets their architecture sentence, one problem, and one proposal, then an AskQuestion to keep theirs, take the proposal, or mix the two. While that decision is open, project edits are refused. One marked function is left for the student. The review records `Matched`, decision alignment, prediction alignment, and evidence. An existing repository gets a map. `Tests: run` cites a bounded test run. Stop writes `.praxis/export/`. Install, update, status, rollback, and uninstall are local commands.
+
+**What is retired.** The MCP server, the question card, the YAML quiz, and `scaffold_todos` stay in the repository for tests. Students do not use them. See [Retired compatibility path](#retired-compatibility-path).
+
+**What is planned.** [PLAN.md](PLAN.md) lists the rest under Later: publishing to the Cursor marketplace, fading hints across projects, a decision timeline in a panel, and a recall question after the review.
+
 ## Demo
 
 A screen recording of a real Cursor session is not included yet. The **illustrative chat transcript** below shows the conversation, and the **captured hook run** shows what the plugin actually enforces on disk.
@@ -116,10 +142,7 @@ robocopy $Source $Dest /MIR /XD node_modules .git dist
 
 ### Enable and start
 
-1. **Developer: Reload Window**
-2. **Customize** → enable **Praxis** (account-level, not per folder)
-3. Open a **different** project and a **new** Agent chat
-4. Ask to build something; expect AskQuestion, not a plain-text quiz
+Follow [Quick start](#quick-start). Enable Praxis from **Customize** for the account, then open a different project and a new Agent chat. The first AskQuestion is on or off.
 
 **Praxis does not run in this source repo.** Hooks detect `.cursor-plugin/plugin.json` plus `rules/praxis.mdc` and skip student map/export behavior here.
 
@@ -150,7 +173,7 @@ After confirmation: one prediction sentence, then code with one `TODO(praxis:<to
 7. **preToolUse** denies edits that drop marker substrings until the student implements.
 8. Student implements the function (marker gone).
 9. Model writes `.praxis/review.md` (`Matched: yes`, `partial`, `no`, or `blocked`, with Decision alignment and Prediction alignment); **stop** / **session** may refresh `.praxis/report.md` and root **DECISIONS.md**.
-10. Next build request or chat continues from `.praxis/progress.md` and notes. `Level` sets explanation depth. Adaptation stays on until `Adapt: off`. Cross-project progress stays off until `Progress: on`. That record stays on this computer, and `Progress: clear` deletes it.
+10. Next build request or chat continues from `.praxis/progress.md` and notes. `Level` sets explanation depth. Adaptation stays on until `Adapt: off`. Cross-project progress stays off until `Progress: on`. That record stays on this computer, and `Progress: clear` deletes it. `Tests: run` asks for a bounded test citation. Stop also writes `.praxis/export/`.
 
 ```mermaid
 flowchart LR
@@ -173,13 +196,14 @@ student-project/
 └── src/db.ts          # existing sample code (map scan finds it)
 ```
 
-**After `session`**
+**After `session` once they turn Praxis on**
 
 ```text
 student-project/
 ├── .praxis/
 │   ├── progress.md    # Status: pending, open beat
-│   └── map.md         # Parts + Unknowns from listCodeFiles
+│   ├── map.md         # Parts + Unknowns from listCodeFiles
+│   └── state.json     # schema 1, refreshed from progress.md
 └── src/db.ts
 ```
 
@@ -191,11 +215,19 @@ student-project/
 │   ├── progress.md    # often Status: confirmed
 │   ├── decisions.md   # operational source of truth (append blocks)
 │   ├── map.md
-│   └── marks.md       # Topic / File / Function from TODO scan
-├── DECISIONS.md       # generated from decisions.md
+│   ├── marks.md       # Topic / File / Function from TODO scan
+│   ├── state.json
+│   └── export/
+│       ├── session.json
+│       ├── review.json    # reviews empty until review.md exists
+│       ├── stats.json
+│       ├── stats.csv
+│       ├── portfolio.md   # their words
+│       └── summary.json   # omits reasons, predictions, and file paths
+├── DECISIONS.md           # generated from decisions.md
 └── src/
     ├── db.ts
-    └── expenses.ts    # stub still contains TODO(praxis:…)
+    └── expenses.ts        # stub still contains TODO(praxis:…)
 ```
 
 **After student implementation + `review.md` + `stop`**
@@ -203,12 +235,14 @@ student-project/
 ```text
 student-project/
 ├── .praxis/
-│   ├── …              # progress, decisions, map, marks
+│   ├── …              # progress, decisions, map, marks, state, export
 │   ├── review.md      # Matched yes|partial|no|blocked — **model-written** (driver fakes this in the demo)
 │   └── report.md      # **hook-generated** on stop from review.md + decisions
 ├── DECISIONS.md
 └── src/expenses.ts    # marker removed — student implementation
 ```
+
+`Tests: run` also writes `.praxis/tests.md`, then the line becomes `Tests: done`. The demo does not ask for that run.
 
 Manual edits under `.praxis/` change what the **session** hook injects on the next chat (open `Topic`, `Bypass`, etc.). While `Status: pending`, edits outside `.praxis/` are refused except during `Bypass: one-step`.
 
@@ -235,6 +269,9 @@ Manual edits under `.praxis/` change what the **session** hook injects on the ne
 | Session / gate | [`hooks/praxis.mjs`](hooks/praxis.mjs) | Context, `Status: pending` gate, one-step bypass |
 | Record | [`hooks/record.mjs`](hooks/record.mjs) | `syncMap`, `DECISIONS.md` from notes |
 | Review | [`hooks/review.mjs`](hooks/review.mjs) | Marker guard, `marks.md`, `report.md` |
+| Export | [`hooks/export.mjs`](hooks/export.mjs) | `.praxis/export/` on stop |
+| Tests | [`hooks/tests.mjs`](hooks/tests.mjs) | Bounded `node --test` when `Tests: run` |
+| Learning | [`hooks/learn.mjs`](hooks/learn.mjs) | Level, adaptation, opt-in progress |
 
 **Gate:** `Status: pending` blocks project edits; `.praxis/` allowed; `Bypass: one-step` allows one step; `confirmed` or empty progress does not block ([`gateEdit`](hooks/praxis.mjs)).
 
@@ -246,9 +283,12 @@ Manual edits under `.praxis/` change what the **session** hook injects on the ne
 
 ## Known limitations
 
-- Pre-release; local install; marketplace later ([PLAN.md](PLAN.md)).
-- Shallow map scan; duplicate Parts/Unknowns entries until described.
-- AskQuestion nuance is rule-driven; hooks enforce files and markers only.
+- Pre-release and local install only. Marketplace distribution is not available ([PLAN.md](PLAN.md)).
+- A screen recording is not in the repository. The chat table above is an example. [`docs/demo-run.txt`](docs/demo-run.txt) is the captured hook run.
+- The map stops at depth 12 and 40 files. A file stays under Unknowns until its Parts line has a description.
+- AskQuestion is asked by the model from the rule. The hook supplies the session note and enforces files and markers.
+- Shell is not gated. A shell command can still write a file while a decision is open.
+- Tests run only after `Tests: run`. The hook does not start them on its own.
 - [`src/path.test.ts`](src/path.test.ts): empty MCP wiring, hook sources omit retired symbols; integration without `session.json` / `questions/core.yaml`.
 
 ## Develop Praxis

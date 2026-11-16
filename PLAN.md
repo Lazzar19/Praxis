@@ -262,6 +262,24 @@ Done when the document contains the block warning and the package command writes
 
 Done when a temporary install reports the current version, a rollback restores the previous copy, and uninstall removes only the install.
 
+### Slice 29 — the first successful result is the quick start
+
+The README leads with six steps: install, reload, enable, a new Agent chat in a student project, a request to build something, and the first AskQuestion. That question is on or off. The source tree and the retired path come later.
+
+Done when those steps appear in that order and the retired path is not required to reach the question.
+
+### Slice 30 — the demo lists the files a session writes
+
+The labeled chat transcript stays an example. A session recording is not in the repository. `npm run demo` checks `state.json` and `.praxis/export/`. The portfolio keeps their reason. The summary omits it. The README trees name those files, and the limitations name the map cap, the ungated shell, and tests that run only when asked.
+
+Done when the demo fails if an export file is missing or the summary contains the reason.
+
+### Slice 31 — status and roadmap sit together
+
+The README states experimental 0.1.0, what works, what is retired, and what is planned. Planned work is the marketplace, fading hints, a decision timeline, and a recall question. Marketplace distribution is not available.
+
+Done when that status section names each of those four planned items.
+
 ---
 
 ## Later
@@ -293,4 +311,6 @@ Done when a temporary install reports the current version, a rollback restores t
 - `package.json` — active and legacy test scripts, slice 26
 - `docs/distribution.md` and `CHANGELOG.md` — distribution notes, slice 27
 - `scripts/plugin.mjs` — install and rollback, slice 28
+- `README.md` — quick start, demo files, and roadmap, slices 29–31
+- `docs/demo-session.mjs` — export files in the captured run, slice 30
 - `.praxis/` in the student project — notes, not the plugin source
