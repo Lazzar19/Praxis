@@ -286,6 +286,12 @@ Cursor plugins have no view of their own. On stop, and on a session that already
 
 Done when two decisions stay in note order, the review stays on the decision it belongs to, and a session with no decisions does not write the file.
 
+### Slice 33 — start Praxis after it was left off
+
+The first choice stays AskQuestion. `/start-praxis` is only for a project that was left off. It writes `Praxis: on` and `Status: pending`. The hook allows that write and clears the off flag. On the next session, before any option list, the note names the goal from the README or the package description, and the architecture already in the tree: data access, an API boundary, deployment, a framework, an entry point. That reading is not their sentence. A project with no code and no goal stays quiet. A project that already has decisions does not get the brief again.
+
+Done when a late start names the goal and the files already in the tree, and an empty off project does not.
+
 ---
 
 ## Later
@@ -319,4 +325,5 @@ Done when two decisions stay in note order, the review stays on the decision it 
 - `README.md` — quick start, demo files, and roadmap, slices 29–31
 - `docs/demo-session.mjs` — export files in the captured run, slice 30
 - `hooks/timeline.mjs` and `commands/decision-timeline.md` — timeline beside the chat, slice 32
+- `hooks/brief.mjs` and `commands/start-praxis.md` — late start, slice 33
 - `.praxis/` in the student project — notes, not the plugin source
