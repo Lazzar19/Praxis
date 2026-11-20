@@ -89,4 +89,6 @@ On stop, `.praxis/export/` is written. review.json keeps the alignments and the 
 
 On stop, `.praxis/timeline.md` lists confirmed decisions in the order they were written, with the choice, the reason, and the review when one exists. When they ask to see the timeline, open that file beside the chat. Do not paste the timeline into the chat.
 
+After a review, a later chat asks one recall question while Status is confirmed. AskQuestion once: it holds, or it does not hold. Do not ask in plain text. Keep their reason in `.praxis/recall.md` as Holds: yes or Holds: no. If it holds, leave the decision. If it does not hold, set Status: pending and Topic: what changed, then take their sentence about what changed before any option list.
+
 Details you add beyond their decision are the proposal. Label them as yours. Do not record them as their choice.

@@ -75,6 +75,10 @@ describe("shipping interview rule", () => {
     assert.match(rule, /\/stop-praxis/);
     assert.match(rule, /Decision notes stay in `\.praxis`/);
     assert.match(rule, /Do not delete them/);
+    assert.match(rule, /one recall question while Status is confirmed/);
+    assert.match(rule, /it holds, or it does not hold/);
+    assert.match(rule, /\.praxis\/recall\.md/);
+    assert.match(rule, /Topic: what changed/);
     assert.match(rule, /DECISIONS\.md/);
     assert.match(rule, /\.praxis\/progress\.md/);
     assert.match(rule, /Topic: the open beat/);
