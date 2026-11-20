@@ -81,7 +81,7 @@ Status: pending
 Topic: their sentence
 Bypass: none`;
 
-export const OFF = `Praxis is off for this project. Do not ask interview questions. Do not create .praxis. If they ask to turn Praxis on, or they use start-praxis, write Praxis: on and Status: pending in .praxis/progress.md, then take their sentence before offering options. Do not ask them to run a command. When the tree already has code, restate the goal and the architecture already there before that sentence. That reading is not their choice.`;
+export const OFF = `Praxis is off for this project. Do not ask interview questions. Do not create .praxis. If decisions are already in .praxis, leave those files in place. If they ask to turn Praxis on, or they use start-praxis, write Praxis: on and Status: pending in .praxis/progress.md, then take their sentence before offering options. Do not ask them to run a command. When the tree already has code, restate the goal and the architecture already there before that sentence. That reading is not their choice.`;
 
 export function sessionContext(progress) {
   if (progress.status !== "pending") return "";
@@ -290,6 +290,7 @@ function gateNotes(input, root, progress, filePath) {
   const next = progressAfterEdit(input, root, filePath);
   if (next !== null && (parseProgress(next).praxis === "off" || parseProgress(next).status === "off")) {
     setDeclined(root);
+    if (notesActive(root, progress)) return { permission: "allow" };
     return refusedOff();
   }
   if (next !== null && praxisOn(parseProgress(next))) {
