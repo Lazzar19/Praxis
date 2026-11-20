@@ -9,6 +9,7 @@ import { writeTimeline } from "./timeline.mjs";
 import { learningNote, progressNote, rememberProgress } from "./learn.mjs";
 import { runMarkedTests } from "./tests.mjs";
 import { projectBrief } from "./brief.mjs";
+import { recallNote } from "./recall.mjs";
 import { classifyPath, ensureMap, isPluginProject, writeRecord } from "./record.mjs";
 import { syncState } from "./state.mjs";
 import { protectMarkedEdit, recordPractice } from "./review.mjs";
@@ -333,7 +334,7 @@ function respond(command, input) {
     if (testNote.length > 0) syncState(root, settled);
     writeExports(root, settled);
     const timelineNote = writeTimeline(root, settled);
-    const context = [sessionContext(live), projectBrief(root), ensureMap(root), practice, testNote, timelineNote, stateWarning, sessionProblems(root, live), learningNote(root, settled), progressNote(root, settled)].filter((part) => part.length > 0).join("\n\n");
+    const context = [sessionContext(live), projectBrief(root), recallNote(root, settled), ensureMap(root), practice, testNote, timelineNote, stateWarning, sessionProblems(root, live), learningNote(root, settled), progressNote(root, settled)].filter((part) => part.length > 0).join("\n\n");
     writeRecord(root);
     return context.length > 0 ? { additional_context: context } : {};
   }
