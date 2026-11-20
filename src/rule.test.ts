@@ -69,6 +69,9 @@ describe("shipping interview rule", () => {
     assert.match(rule, /\.praxis\/timeline\.md/);
     assert.match(rule, /open that file beside the chat/);
     assert.match(rule, /Do not paste the timeline into the chat/);
+    assert.match(rule, /\/start-praxis/);
+    assert.match(rule, /only for a project that was left off/);
+    assert.match(rule, /That reading is not their sentence/);
     assert.match(rule, /DECISIONS\.md/);
     assert.match(rule, /\.praxis\/progress\.md/);
     assert.match(rule, /Topic: the open beat/);
