@@ -292,6 +292,12 @@ The first choice stays AskQuestion. `/start-praxis` is only for a project that w
 
 Done when a late start names the goal and the files already in the tree, and an empty off project does not.
 
+### Slice 34 — stop Praxis and keep the decision notes
+
+`/stop-praxis` is only for a project where Praxis is already on. It writes `Praxis: off` and `Status: off`. The hook allows that write. The first choice, leaving Praxis off before any notes, is still refused. On the next session the interview stays quiet. `decisions.md` and the other notes stay. A stop with no decisions still leaves no notes directory. `/start-praxis` can turn it on again, and those decisions are still there.
+
+Done when a stop keeps the decision text, a first-time off is still refused, and a stop with no decisions removes the notes directory.
+
 ---
 
 ## Later
@@ -326,4 +332,5 @@ Done when a late start names the goal and the files already in the tree, and an 
 - `docs/demo-session.mjs` — export files in the captured run, slice 30
 - `hooks/timeline.mjs` and `commands/decision-timeline.md` — timeline beside the chat, slice 32
 - `hooks/brief.mjs` and `commands/start-praxis.md` — late start, slice 33
+- `hooks/praxis.mjs` and `commands/stop-praxis.md` — stop and keep notes, slice 34
 - `.praxis/` in the student project — notes, not the plugin source
