@@ -110,14 +110,23 @@ export function listCodeFiles(root) {
   return { files: selected.files, roles, truncated: selected.truncated };
 }
 
-function packageRole(root) {
+export function packageFrameworks(root) {
   let text = "";
   try {
     text = readFileSync(path.join(root, "package.json"), "utf8").toLowerCase();
   } catch {
+    return [];
+  }
+  return FRAMEWORKS.filter((name) => text.includes(`"${name}"`));
+}
+
+function packageRole(root) {
+  try {
+    readFileSync(path.join(root, "package.json"), "utf8");
+  } catch {
     return "package manager";
   }
-  return FRAMEWORKS.some((name) => text.includes(`"${name}"`)) ? "package manager, framework" : "package manager";
+  return packageFrameworks(root).length > 0 ? "package manager, framework" : "package manager";
 }
 
 export function syncMap(existing, files, truncated = false, roles = {}) {

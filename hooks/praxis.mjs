@@ -8,6 +8,7 @@ import { writeExports } from "./export.mjs";
 import { writeTimeline } from "./timeline.mjs";
 import { learningNote, progressNote, rememberProgress } from "./learn.mjs";
 import { runMarkedTests } from "./tests.mjs";
+import { projectBrief } from "./brief.mjs";
 import { classifyPath, ensureMap, isPluginProject, writeRecord } from "./record.mjs";
 import { syncState } from "./state.mjs";
 import { protectMarkedEdit, recordPractice } from "./review.mjs";
@@ -80,7 +81,7 @@ Status: pending
 Topic: their sentence
 Bypass: none`;
 
-export const OFF = `Praxis is off for this project. Do not ask interview questions. Do not create .praxis. If they ask to turn Praxis on, write Praxis: on and Status: pending in .praxis/progress.md, then take their sentence before offering options. Do not ask them to run a command.`;
+export const OFF = `Praxis is off for this project. Do not ask interview questions. Do not create .praxis. If they ask to turn Praxis on, or they use start-praxis, write Praxis: on and Status: pending in .praxis/progress.md, then take their sentence before offering options. Do not ask them to run a command. When the tree already has code, restate the goal and the architecture already there before that sentence. That reading is not their choice.`;
 
 export function sessionContext(progress) {
   if (progress.status !== "pending") return "";
@@ -331,7 +332,7 @@ function respond(command, input) {
     if (testNote.length > 0) syncState(root, settled);
     writeExports(root, settled);
     const timelineNote = writeTimeline(root, settled);
-    const context = [sessionContext(live), ensureMap(root), practice, testNote, timelineNote, stateWarning, sessionProblems(root, live), learningNote(root, settled), progressNote(root, settled)].filter((part) => part.length > 0).join("\n\n");
+    const context = [sessionContext(live), projectBrief(root), ensureMap(root), practice, testNote, timelineNote, stateWarning, sessionProblems(root, live), learningNote(root, settled), progressNote(root, settled)].filter((part) => part.length > 0).join("\n\n");
     writeRecord(root);
     return context.length > 0 ? { additional_context: context } : {};
   }

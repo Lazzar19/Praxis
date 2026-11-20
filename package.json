@@ -14,7 +14,7 @@
     "build": "tsc && tsc -p tsconfig.extension.json && esbuild src/extension/extension.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/extension.cjs --external:vscode --sourcemap",
     "start": "node dist/index.js",
     "test": "npm run test:active && npm run test:legacy",
-    "test:active": "tsx --test src/gate.test.ts src/record.test.ts src/review.test.ts src/learn.test.ts src/reliability.test.ts src/matrix.test.ts src/rule.test.ts src/path.test.ts src/export.test.ts src/plugin.test.ts src/readme.test.ts src/timeline.test.ts",
+    "test:active": "tsx --test src/gate.test.ts src/record.test.ts src/review.test.ts src/learn.test.ts src/reliability.test.ts src/matrix.test.ts src/rule.test.ts src/path.test.ts src/export.test.ts src/plugin.test.ts src/readme.test.ts src/timeline.test.ts src/brief.test.ts",
     "test:legacy": "tsx --test src/server.test.ts src/scaffold.test.ts src/flow.test.ts src/additions.test.ts src/session.test.ts src/tree.test.ts src/render.test.ts src/extension/*.test.ts",
     "demo": "node docs/demo-session.mjs",
     "plugin:install": "node scripts/plugin.mjs install",
