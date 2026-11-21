@@ -11,3 +11,5 @@ Confirmed decisions are listed in `.praxis/timeline.md`, in the order they were 
 `/start-praxis` turns Praxis on after it was left off. The session then names the goal and the architecture already in the tree before asking for their sentence.
 
 `/stop-praxis` turns Praxis off while it is on. Decision notes stay in `.praxis`.
+
+After a review, a later chat asks one recall question. If the answer does not hold, the next beat is their sentence about what changed.

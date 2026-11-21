@@ -28,11 +28,11 @@ Choosing on starts the debate. Choosing off keeps no notes.
 | Status | Experimental, version 0.1.0, pre-release |
 | Marketplace | Not available |
 
-**What works.** A project turns Praxis on or off. A build request gets their architecture sentence, one problem, and one proposal, then an AskQuestion to keep theirs, take the proposal, or mix the two. While that decision is open, project edits are refused. One marked function is left for the student. The review records `Matched`, decision alignment, prediction alignment, and evidence. An existing repository gets a map. `Tests: run` cites a bounded test run. Stop writes `.praxis/export/`. The decision timeline is `.praxis/timeline.md`, opened beside the chat. A project that was left off turns on later with `/start-praxis`. `/stop-praxis` turns it off again and leaves the decision notes in place. The next session names the goal and the architecture already in the tree, and that reading is not their sentence. Install, update, status, rollback, and uninstall are local commands.
+**What works.** A project turns Praxis on or off. A build request gets their architecture sentence, one problem, and one proposal, then an AskQuestion to keep theirs, take the proposal, or mix the two. While that decision is open, project edits are refused. One marked function is left for the student. The review records `Matched`, decision alignment, prediction alignment, and evidence. An existing repository gets a map. `Tests: run` cites a bounded test run. Stop writes `.praxis/export/`. The decision timeline is `.praxis/timeline.md`, opened beside the chat. A project that was left off turns on later with `/start-praxis`. `/stop-praxis` turns it off again and leaves the decision notes in place. After a review, a later chat asks one recall question: it holds, or it does not hold. If it does not hold, the next beat is their sentence about what changed. The next session names the goal and the architecture already in the tree, and that reading is not their sentence. Install, update, status, rollback, and uninstall are local commands.
 
 **What is retired.** The MCP server, the question card, the YAML quiz, and `scaffold_todos` stay in the repository for tests. Students do not use them. See [Retired compatibility path](#retired-compatibility-path).
 
-**What is planned.** [PLAN.md](PLAN.md) lists the rest under Later: publishing to the Cursor marketplace, fading hints across projects, and a recall question after the review.
+**What is planned.** [PLAN.md](PLAN.md) lists the rest under Later: publishing to the Cursor marketplace and fading hints across projects.
 
 ## Demo
 

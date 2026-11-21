@@ -298,13 +298,18 @@ Done when a late start names the goal and the files already in the tree, and an 
 
 Done when a stop keeps the decision text, a first-time off is still refused, and a stop with no decisions removes the notes directory.
 
+### Slice 35 — a recall question in a later chat
+
+After a review, the next session asks one recall question while `Status` is confirmed. The question is AskQuestion: it holds, or it does not hold. Their reason goes in `.praxis/recall.md`. One decision is asked at a time, in note order, and a blocked review is skipped. An open pending beat is not interrupted. If it holds, that decision is not asked again. If it does not hold, the session says so and the next beat is their sentence about what changed, with `Topic: what changed`.
+
+Done when a confirmed review is asked once, a pending beat is left alone, a held answer is not asked again, and an answer that does not hold opens that sentence.
+
 ---
 
 ## Later
 
 - Publishing to the Cursor marketplace.
 - Fading hints across projects.
-- A recall question after the review, brought back in a later chat if the answer does not hold.
 
 ## Files this refactor starts from
 
@@ -333,4 +338,5 @@ Done when a stop keeps the decision text, a first-time off is still refused, and
 - `hooks/timeline.mjs` and `commands/decision-timeline.md` — timeline beside the chat, slice 32
 - `hooks/brief.mjs` and `commands/start-praxis.md` — late start, slice 33
 - `hooks/praxis.mjs` and `commands/stop-praxis.md` — stop and keep notes, slice 34
+- `hooks/recall.mjs` — recall question, slice 35
 - `.praxis/` in the student project — notes, not the plugin source

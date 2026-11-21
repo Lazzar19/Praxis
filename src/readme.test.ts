@@ -61,7 +61,8 @@ describe("README documentation", () => {
     const planned = status.split("What is planned")[1] ?? "";
     assert.match(planned, /publishing to the Cursor marketplace/);
     assert.match(planned, /fading hints/);
-    assert.match(planned, /recall question/);
+    assert.doesNotMatch(planned, /recall question/);
     assert.doesNotMatch(planned, /decision timeline/);
+    assert.match(status, /What works[\s\S]*one recall question/);
   });
 });
